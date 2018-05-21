@@ -3,8 +3,9 @@
 upstream=eth0
 phy=wlan0
 #conf=/etc/mana-toolkit/hostapd-mana.conf
-conf=$(dirname $0)/_custom_start-nat-full_hostapd-mana.conf
-hostapd=/usr/lib/mana-toolkit/hostapd
+conf=$(cd $(dirname $0); pwd -P)/_custom_start-nat-full_hostapd-mana.conf
+#hostapd=/usr/lib/mana-toolkit/hostapd
+hostapd=$(cd $(dirname ../hostapd-mana-2.6/hostapd/hostapd); pwd -P)/hostapd
 
 hostname WRT54G
 echo hostname WRT54G

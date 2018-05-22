@@ -1,12 +1,17 @@
 #!/bin/bash
+ source $(cd $(dirname $0); pwd -P)/_custom_functions.sh
+
+ detect_arch
+  if [ $is_arm -eq 1 ] ; then
+   hostapd=$(cd $(dirname $0); pwd -P)/../hostapd-mana-2.6/hostapd/hostapd_rpi_arm_kali #Default:[/usr/lib/mana-toolkit/hostapd]
+  else
+   hostapd=$(cd $(dirname $0); pwd -P)/../hostapd-mana-2.6/hostapd/hostapd_x86_x64_kali #Default:[/usr/lib/mana-toolkit/hostapd]
+  fi
+
+  conf=$(cd $(dirname $0); pwd -P)/_custom_start-nat-full_hostapd-mana.conf #Default:[/etc/mana-toolkit/hostapd-mana.conf]
 
 upstream=eth0
 phy=wlan0
-#conf=/etc/mana-toolkit/hostapd-mana.conf
-conf=$(cd $(dirname $0); pwd -P)/_custom_start-nat-full_hostapd-mana.conf
-#hostapd=/usr/lib/mana-toolkit/hostapd
-hostapd=$(cd $(dirname ../hostapd-mana-2.6/hostapd/hostapd); pwd -P)/hostapd
-
 hostname WRT54G
 echo hostname WRT54G
 sleep 2

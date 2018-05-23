@@ -1,5 +1,11 @@
 #!/bin/bash
 #This is a work in progress and not complete, don't use it
+# [*]hostapd-mana  - modified hostapd that implements our new mana attacks
+# [*]crackapd 	   - a tool for offloading the cracking of EAP creds to an external tool and re-adding them to the hostapd EAP config (auto cr$
+# [*]sslstrip-hsts - our modifications to LeonardoNVE's & moxie's cool tools|Modified sslstrip
+# [*]apache	   - the apache vhosts for the noupstream hacks; deploy to /etc/apache2/ and /var/www/ respectivley
+# [*]firelamb 	   - captures and writes cookies to a firefox profile for easy use.
+
 set -x
 upstream=eth0
 phy=wlan0

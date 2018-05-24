@@ -38,9 +38,11 @@ clearwifi(){
 }
 
 start_macchanger(){
-        ifconfig "$phy" down
-        macchanger -r "$phy"
-        ifconfig "$phy" up
+read -t 5 -p "Changing mac in 5 seconds, type x to skip [>]" ans
+ case $ans in
+  x|X) echo -e "\n Skipping macchange.." ;;
+  *) ifconfig "$phy" down; macchanger -r "$phy"; ifconfig "$phy" up ;;
+ esac
 }
 
 start_hostapd(){
@@ -126,11 +128,7 @@ start_netcreds(){
 
 start_msfconsole(){
         sed -i "s/^set INTERFACE .*$/set INTERFACE $phy/" $etc/karmetasploit.rc
-        msfconsole -r $etc/karmetasploit.rc& #Remove "&" to fix msfconsole exiting
-}
-
-start_bettercap(){
- bettercap -T 10.0.0.20 --interface $phy --no-spoofing --no-discovery --proxy --proxy-port 80 --proxy-https-port 443 -P POST
+        msfconsole -r $etc/karmetasploit.rc&
 }
 
 hangon(){

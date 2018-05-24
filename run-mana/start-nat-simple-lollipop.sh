@@ -21,7 +21,6 @@ sed -i "s/^interface=.*$/interface=$phy/" $conf
 $hostapd $conf &
 sleep 5
 dnsmasq -z -C /etc/mana-toolkit/dnsmasq-dhcpd.conf -i $phy -I lo
-#dnsmasq -z -C /etc/mana-toolkit/dnsmasq-dhcpd.conf -i $phy -I lo
 sleep 5
 
 # Add fking rule to table 1006

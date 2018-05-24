@@ -7,6 +7,8 @@ echo [+] If you are worried about that, hit Ctl-C now, or hit Enter to continue
 read
 
 # Install build dependencies
+ pip install service_identity #deb for sslstrip
+
 # Checking for Kali 2, since libnl1 is not prebuild any longer
 if grep "Kali GNU/Linux 2" /etc/lsb-release &>/dev/null; then
 	# Running Kali Linux 2.x

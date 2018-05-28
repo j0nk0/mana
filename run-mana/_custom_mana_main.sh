@@ -9,7 +9,7 @@ lib=/usr/lib/mana-toolkit
 share=/usr/share/mana-toolkit
 loot=/var/lib/mana-toolkit
 
-#conf=$(cd $(dirname $0); pwd -P)/_custom_start-nat-full.conf #Default:[/etc/mana-toolkit/hostapd-mana.conf]
+#conf=$(cd $(dirname $0); pwd -P)/_custom_start-nat-full.conf #Default:[$etc/hostapd-mana.conf]
 conf=$etc/hostapd-mana.conf
 hostapd=$lib/hostapd
 
@@ -133,7 +133,7 @@ start_msfconsole(){
 
 hangon(){
         echo -e "\n"
-        echo -e "[*] The captured traffic will be in /var/lib/mana-toolkit \n"
+        echo -e "[*] The captured traffic will be in $loot \n"
         echo -e "[*] and $etc/run-mana/credentials.txt \n"
         echo -e "[>] Hit enter to kill me"
          read

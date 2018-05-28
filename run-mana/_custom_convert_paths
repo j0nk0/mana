@@ -1,0 +1,48 @@
+#!/bin/bash
+
+convert_(){
+echo "backing up:$FILENAME"
+cp --verbose --backup=numbered "$FILENAME" "$FILENAME.ORIGNAL"
+ sed -i 's|/etc/mana-toolkit|$etc|g' $FILENAME
+ sed -i 's|/usr/lib/mana-toolkit|$lib|g' $FILENAME
+ sed -i 's|/usr/share/mana-toolkit|$share|g' $FILENAME
+ sed -i 's|/var/lib/mana-toolkit|$loot|g' $FILENAME
+
+ sed -i 's|etc=$etc|etc=/etc/mana-toolkit|g' $FILENAME
+ sed -i 's|lib=$lib|lib=/usr/lib/mana-toolkit|g' $FILENAME
+ sed -i 's|share=$share|share=/usr/share/mana-toolkit|g' $FILENAME
+ sed -i 's|loot=$loot|loot=/var/lib/mana-toolkit|g' $FILENAME
+
+if ! grep 'share=/usr/share/mana-toolkit' $FILENAME;then
+ sed -i 's|.*#!/bin/bash.*|&\nshare=/usr/share/mana-toolkit|' $FILENAME
+fi
+if ! grep 'loot=/var/lib/mana-toolkit' $FILENAME;then
+ sed -i 's|.*#!/bin/bash.*|&\nloot=/var/lib/mana-toolkit|' $FILENAME
+fi
+if ! grep 'lib=/usr/lib/mana-toolkit' $FILENAME;then
+ sed -i 's|.*#!/bin/bash.*|&\nlib=/usr/lib/mana-toolkit|' $FILENAME
+fi
+if ! grep 'etc=/etc/mana-toolkit' $FILENAME;then
+ sed -i 's|.*#!/bin/bash.*|&\netc=/etc/mana-toolkit|' $FILENAME
+fi
+}
+
+if [ -z "$1" ]; then
+  echo "No file input received, find files? With;"
+  echo "find -maxdepth 1 -type f"
+  echo ""
+  echo "[*]Ctrl-c to abort"
+   read ans
+     for FILENAME in $(find -maxdepth 1 -type f |grep -v $(basename $0) |grep -v '.ORIGNAL'); do
+      convert_ "$FILENAME"
+     done
+else
+ FILENAME="$1"
+ convert
+fi
+
+exit
+#etc=/etc/mana-toolkit
+#lib=/usr/lib/mana-toolkit
+#share=/usr/share/mana-toolkit
+#loot=/var/lib/mana-toolkit

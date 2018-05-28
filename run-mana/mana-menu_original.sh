@@ -83,7 +83,7 @@ function tinyproxy() {
 }
 
 function stunnel() {
-	stunnel4 /etc/mana-toolkit/stunnel.conf
+	stunnel4 $etc/stunnel.conf
 }
 
 function dhcpd() {

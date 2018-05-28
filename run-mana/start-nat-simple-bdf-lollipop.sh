@@ -1,9 +1,13 @@
 #!/bin/bash
+etc=/etc/mana-toolkit
+lib=/usr/lib/mana-toolkit
+loot=/var/lib/mana-toolkit
+share=/usr/share/mana-toolkit
 #start-nat-simple.sh - Will fire up MANA in NAT mode, but without any of the firelamb, sslstrip, sslsplit etc.
 upstream=wlan0
 phy=wlan1
 conf=/sdcard/nh_files/configs/hostapd-karma.conf
-hostapd=/usr/lib/mana-toolkit/hostapd
+hostapd=$lib/hostapd
 
 echo '1' > /proc/sys/net/ipv4/ip_forward
 rfkill unblock wlan
@@ -20,7 +24,7 @@ ip route add default via 10.0.0.1 dev $phy
 sed -i "s/^interface=.*$/interface=$phy/" $conf
 $hostapd $conf &
 sleep 5
-dnsmasq -z -C /etc/mana-toolkit/dnsmasq-dhcpd.conf -i $phy -I lo
+dnsmasq -z -C $etc/dnsmasq-dhcpd.conf -i $phy -I lo
 sleep 5
 
 # Add fking rule to table 1006

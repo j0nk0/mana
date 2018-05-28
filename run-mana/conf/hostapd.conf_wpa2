@@ -1,0 +1,34 @@
+interface=wlan0
+driver=nl80211
+ssid=My_AP
+# Operation mode (a = IEEE 802.11a (5 GHz), b = IEEE 802.11b (2.4 GHz),
+# g = IEEE 802.11g (2.4 GHz), ad = IEEE 802.11ad (60 GHz); a/g options are used
+# with IEEE 802.11n (HT), too, to specify band). For IEEE 802.11ac (VHT), this
+# needs to be set to hw_mode=a. When using ACS (see channel parameter), a
+# special value "any" can be used to indicate that any support band can be used.
+# Default: IEEE 802.11b
+hw_mode=g
+channel=6
+macaddr_acl=0
+auth_algs=1
+# Send empty SSID in beacons and ignore probe request frames that do not
+# specify full SSID, i.e., require stations to know SSID.
+# default: disabled (0)
+# 1 = send empty (length=0) SSID in beacon and ignore probe request for
+#     broadcast SSID
+# 2 = clear SSID (ASCII 0), but keep the original length (this may be required
+#     with some clients that do not support empty SSID) and ignore probe
+#     requests for broadcast SSID
+ignore_broadcast_ssid=0
+wpa=3
+wpa_passphrase=my_password
+wpa_key_mgmt=WPA-PSK
+wpa_pairwise=TKIP
+rsn_pairwise=CCMP
+
+##### Wi-Fi Protected Setup (WPS) #############################################
+# WPS state
+# 0 = WPS disabled (default)
+# 1 = WPS enabled, not configured
+# 2 = WPS enabled, configured
+#wps_state=0

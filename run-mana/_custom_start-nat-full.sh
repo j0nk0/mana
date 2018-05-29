@@ -1,8 +1,4 @@
 #!/bin/bash
-etc=/etc/mana-toolkit
-lib=/usr/lib/mana-toolkit
-loot=/var/lib/mana-toolkit
-share=/usr/share/mana-toolkit
  source $(cd $(dirname $0); pwd -P)/_custom_functions.sh
 
   conf=$(cd $(dirname $0); pwd -P)/_custom_start-nat-full_hostapd-mana.conf #Default:[$etc/hostapd-mana.conf]

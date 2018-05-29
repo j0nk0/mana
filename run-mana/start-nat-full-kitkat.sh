@@ -1,8 +1,4 @@
 #!/bin/bash
-etc=/etc/mana-toolkit
-lib=/usr/lib/mana-toolkit
-loot=/var/lib/mana-toolkit
-share=/usr/share/mana-toolkit
 #start-nat-full.sh - Will fire up MANA in NAT mode (you'll need an upstream link) with all the MitM bells and whistles.
 upstream=wlan0
 phy=wlan1

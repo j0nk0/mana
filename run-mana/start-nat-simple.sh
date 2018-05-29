@@ -1,8 +1,4 @@
 #!/bin/bash
-etc=/etc/mana-toolkit
-lib=/usr/lib/mana-toolkit
-loot=/var/lib/mana-toolkit
-share=/usr/share/mana-toolkit
 
 upstream=eth0
 phy=wlan1

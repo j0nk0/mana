@@ -7,7 +7,6 @@ share=/usr/share/mana-toolkit
 phy=wlan0
 conf=$share/run-mana/conf/hostapd-mana.conf
 hostapd=$lib/hostapd
-set -x
 
 hostname WRT54G
 echo hostname WRT54G
@@ -22,6 +21,7 @@ rfkill unblock wlan
 
 sed -i "s/^interface=.*$/interface=$phy/" $conf
 sed -i "s/^set INTERFACE .*$/set INTERFACE $phy/" $share/run-mana/conf/karmetasploit.rc
+sed -i "s/^interface=.*$/interface=$phy/" $share/run-mana/conf/hostapd.conf
 #$hostapd $conf&
 
 #  $nodogsplash -f -c $share/run-mana/conf/nodogsplash.conf &
@@ -42,7 +42,7 @@ stunnel4 $share/run-mana/conf/stunnel.conf
 tinyproxy -c $share/run-mana/conf/tinyproxy.conf&
 #msfconsole -r $share/run-mana/conf/karmetasploit.rc& #Remove "&" to fix msfconsole exiting 
 echo "Starting nodogsplash"
-nodogsplash -f -c /etc/nodogsplash/nodogsplash.conf &
+nodogsplash -f -c $share/run-mana/conf/nodogsplash.conf &
 
 echo '1' > /proc/sys/net/ipv4/ip_forward
 #iptables --policy INPUT ACCEPT

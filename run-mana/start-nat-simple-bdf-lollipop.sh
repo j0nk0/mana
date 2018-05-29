@@ -1,8 +1,4 @@
 #!/bin/bash
-etc=/etc/mana-toolkit
-lib=/usr/lib/mana-toolkit
-loot=/var/lib/mana-toolkit
-share=/usr/share/mana-toolkit
 #start-nat-simple.sh - Will fire up MANA in NAT mode, but without any of the firelamb, sslstrip, sslsplit etc.
 upstream=wlan0
 phy=wlan1

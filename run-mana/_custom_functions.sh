@@ -1,10 +1,11 @@
 #!/bin/bash
-etc=/etc/mana-toolkit
-lib=/usr/lib/mana-toolkit
-loot=/var/lib/mana-toolkit
-share=/usr/share/mana-toolkit
 ARCH="uname -m"
 TERM_="xterm"
+
+etc=/etc/mana-toolkit
+lib=/usr/lib/mana-toolkit
+share=/usr/share/mana-toolkit
+loot=/var/lib/mana-toolkit
 
 #################################### < Resolution > ####################################
 #fluxion_3.1/fluxion.sh
@@ -69,7 +70,7 @@ detect_arch(){
  detect_arch
 
   if [ $is_arm -eq 1 ] ; then
-   hostapd=$(cd $(dirname $0); pwd -P)/../hostapd-2.3/hostapd/hostapd-2.3_rpi_arm_kali #Default:[$lib/hostapd]
+   hostapd=$share/hostapd-2.3/hostapd/hostapd-2.3_rpi_arm_kali #Default:[/usr/lib/mana-toolkit/hostapd]
   else
-   hostapd=$(cd $(dirname $0); pwd -P)/../hostapd-2.3/hostapd/hostapd-2.3_x86_x86_kali #Default:[$lib/hostapd]
+   hostapd=$share/hostapd-2.3/hostapd/hostapd-2.3_x86_x86_kali #Default:[/usr/lib/mana-toolkit/hostapd]
   fi

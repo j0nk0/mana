@@ -177,6 +177,7 @@ exit
 
 
 start-nat-full(){
+conf=$etc/run-mana/conf/hostapd.conf
 echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
  ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
 echo -e "$txtgrn [*] Changing hostname $endclr"

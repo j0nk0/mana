@@ -9,7 +9,7 @@ ssid=My_AP
 hw_mode=g
 channel=6
 auth_algs=1
-wmm_enabled=0
+wmm_enabled=0 #Quality of Service
 
 ##### Wi-Fi Protected Setup (WPS) #############################################
 # WPS state

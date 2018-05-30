@@ -169,7 +169,7 @@ exit
 
 
 start-nat-full(){
-conf=$etc/run-mana/conf/hostapd.conf
+export conf=$share/run-mana/conf/hostapd.conf
 echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
  ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
 echo -e "$txtgrn [*] Changing hostname $endclr"
@@ -215,7 +215,7 @@ echo -e "$txtgrn [*] Starting netcreds $endclr"
 }
 
 start-nat-simple(){
-conf=$etc/hostapd-mana.conf
+export conf=$share/run-mana/conf/hostapd.conf_wpa2
 echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
  ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
 echo -e "$txtgrn [*] Stopping network-manager & unblocking wifi $endclr"

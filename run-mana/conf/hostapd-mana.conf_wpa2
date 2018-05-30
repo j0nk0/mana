@@ -6,6 +6,16 @@ driver=nl80211
 ssid=Internet
 channel=6
 
+# 1=WPA, 2=WPA2, 3=both
+wpa=3
+wpa_passphrase=my_password
+# Set of accepted key management algorithms (WPA-PSK, WPA-EAP, or both). The
+wpa_key_mgmt=WPA-PSK
+# Pairwise cipher. (CCMP/TKIP/CCMP-256/GCMP/GCMP-256) (default: TKIP)
+wpa_pairwise=TKIP
+# Pairwise cipher for RSN/WPA2 (CCMP/TKIP/CCMP-256/GCMP/GCMP-256) (default: use wpa_pairwise value)
+rsn_pairwise=CCMP
+
 # Operation mode (a = IEEE 802.11a (5 GHz), b = IEEE 802.11b (2.4 GHz),
 # g = IEEE 802.11g (2.4 GHz), ad = IEEE 802.11ad (60 GHz); a/g options are used
 # with IEEE 802.11n (HT), too, to specify band). For IEEE 802.11ac (VHT), this

@@ -47,7 +47,7 @@ start_hostapd(){
 }
 
 start_dnsmasq(){
-	dnsmasq --bind-interfaces --conf-file=$etc/dnsmasq-dhcpd.conf --interface=$phy --except-interface=lo #--port=0
+	dnsmasq --bind-interfaces --conf-file=$share/run-mana/conf/dnsmasq-dhcpd.conf --interface=$phy --except-interface=lo #--port=0
 }
 
 start_nat_firewall(){
@@ -215,7 +215,8 @@ echo -e "$txtgrn [*] Starting netcreds $endclr"
 }
 
 start-nat-simple(){
-export conf=$share/run-mana/conf/hostapd.conf_wpa2
+#export conf=$share/run-mana/conf/hostapd.conf
+export conf=/tmp/mana_clean/run-mana/conf/hostapd.conf_wpa2
 echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
  ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
 echo -e "$txtgrn [*] Stopping network-manager & unblocking wifi $endclr"

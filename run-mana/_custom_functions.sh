@@ -7,6 +7,11 @@ lib=/usr/lib/mana-toolkit
 share=/usr/share/mana-toolkit
 loot=/var/lib/mana-toolkit
 
+endclr='\e[m'
+txtblk='\e[0;30m' # Black   - Regular
+txtred='\e[0;31m' # Red     - Regular
+txtgrn='\e[0;32m' # Green   - Regula
+
 #################################### < Resolution > ####################################
 #fluxion_3.1/fluxion.sh
 function fluxion_set_resolution() { # Windows + Resolution
@@ -70,7 +75,7 @@ detect_arch(){
  detect_arch
 
   if [ $is_arm -eq 1 ] ; then
-   hostapd=$share/hostapd-2.3/hostapd/hostapd-2.3_rpi_arm_kali #Default:[/usr/lib/mana-toolkit/hostapd]
+   hostapd=$share/hostapd-2.6/hostapd/hostapd-2.6_rpi_arm_kali #Default:[/usr/lib/mana-toolkit/hostapd]
   else
-   hostapd=$share/hostapd-2.3/hostapd/hostapd-2.3_x86_x86_kali #Default:[/usr/lib/mana-toolkit/hostapd]
+   hostapd=$share/hostapd-2.6/hostapd/hostapd-2.6_x86_x86_kali #Default:[/usr/lib/mana-toolkit/hostapd]
   fi

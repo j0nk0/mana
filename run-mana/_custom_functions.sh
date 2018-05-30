@@ -2,10 +2,10 @@
 ARCH="uname -m"
 TERM_="xterm"
 
-etc=/etc/mana-toolkit
-lib=/usr/lib/mana-toolkit
-share=/usr/share/mana-toolkit
-loot=/var/lib/mana-toolkit
+export etc=/etc/mana-toolkit
+export lib=/usr/lib/mana-toolkit
+export share=/usr/share/mana-toolkit
+export loot=/var/lib/mana-toolkit
 
 endclr='\e[m'
 txtblk='\e[0;30m' # Black   - Regular

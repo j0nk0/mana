@@ -13,3 +13,6 @@
 [submodule "nodogsplash"]
 	path = nodogsplash
 	url = https://github.com/nodogsplash/nodogsplash
+[submodule "crackpkcs8"]
+	path = crackpkcs8
+	url = https://github.com/j0nk0/crackpkcs8

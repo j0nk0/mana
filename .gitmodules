@@ -16,3 +16,6 @@
 [submodule "crackpkcs8"]
 	path = crackpkcs8
 	url = https://github.com/j0nk0/crackpkcs8
+[submodule "MITMf"]
+	path = MITMf
+	url = https://github.com/byt3bl33d3r/MITMf/

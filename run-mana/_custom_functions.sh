@@ -77,5 +77,5 @@ detect_arch(){
   if [ $is_arm -eq 1 ] ; then
    hostapd=$share/hostapd-2.6/hostapd/hostapd-2.6_rpi_arm_kali #Default:[/usr/lib/mana-toolkit/hostapd]
   else
-   hostapd=$share/hostapd-2.6/hostapd/hostapd-2.6_x86_x86_kali #Default:[/usr/lib/mana-toolkit/hostapd]
+   hostapd=$share/hostapd-2.6/hostapd/hostapd-2.6_x86_x64_kali #Default:[/usr/lib/mana-toolkit/hostapd]
   fi

@@ -271,8 +271,8 @@ killem(){
 
         pkill -f airbase
         pkill -f dhcpd
-        pkill -f start_dnsmasq
         pkill -f dnsmasq
+        pkill -f start_dnsmasq
         pkill -f dnsspoof
         pkill -f dns2proxy
         pkill -f firelamb
@@ -510,9 +510,10 @@ for ARG in $@
       --start_macchanger)      start_macchanger     ;;
       --start_hostapd)  	   start_hostapd        ;;
       --start_dnsmasq)  	   start_dnsmasq        ;;
+      --start_dnsspoof)        start_dnsspoof       ;;
+      --start_dns2proxy)       start_dns2proxy      ;;
       --start_nat_firewall)    start_nat_firewall   ;;
       --start_sslstrip)  	   start_sslstrip       ;;
-      --start_dnsmasq)         start_dnsmasq        ;;
       --start_sslsplit)  	   start_sslsplit       ;;
       --start_firelamb)  	   start_firelamb       ;;
       --start_netcreds)  	   start_netcreds       ;;

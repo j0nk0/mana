@@ -12,6 +12,7 @@ cp --verbose --backup=numbered "$FILENAME" "$FILENAME.ORIGNAL"
  sed -i 's|lib=$lib|lib=/usr/lib/mana-toolkit|g' $FILENAME
  sed -i 's|share=$share|share=/usr/share/mana-toolkit|g' $FILENAME
  sed -i 's|loot=$loot|loot=/var/lib/mana-toolkit|g' $FILENAME
+ sed -i 's|`date "+%s"`|$DATENOW|g' $FILENAME
 
 if ! grep 'share=/usr/share/mana-toolkit' $FILENAME;then
  sed -i 's|.*#!/bin/bash.*|&\nshare=/usr/share/mana-toolkit|' $FILENAME
@@ -25,7 +26,11 @@ fi
 if ! grep 'etc=/etc/mana-toolkit' $FILENAME;then
  sed -i 's|.*#!/bin/bash.*|&\netc=/etc/mana-toolkit|' $FILENAME
 fi
+if ! grep 'DATENOW=' $FILENAME;then
+ sed -i 's|.*#!/bin/bash.*|&\nDATENOW=$(date -u +%G-%m-%d_%k-%M-%S)|' $FILENAME
+fi
 }
+
 
 if [ -z "$1" ]; then
   echo "No file input received, find files? With;"

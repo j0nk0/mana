@@ -262,7 +262,6 @@ killem(){
 #       pkill -f start_msfconsole
         pkill -f start_nat_firewall
         pkill -f net-creds
-#        pkill -f nodogsplash #TODO REMOVED
 #       pkill -f python
 #       pkill -f ruby
         pkill -f sslsplit
@@ -273,10 +272,25 @@ killem(){
         rm --verbose --force $EXNODE
         rm --verbose --force /tmp/crackapd.run
 
+        #List iptables Rules
+#        iptables -S
+
+        #List iptables rules as tables
+#        iptables -L
+
+        #Set default policies for each of the built-in chains to ACCEPT
         iptables --policy INPUT ACCEPT
         iptables --policy FORWARD ACCEPT
         iptables --policy OUTPUT ACCEPT
+
+        #Flush nat and mangle tables, flush all chains (-F).
         iptables -t nat -F
+        iptables -t mangle -F
+        iptables -F
+
+        #Delete all non-default chains (-X):
+        iptables -X
+
  echo -e "$txtred [*] Dont forget to kill msfconsole \n $txtgrn Done$endclr"
 exit
 }
@@ -485,7 +499,6 @@ for ARG in $@
       -s|--start-nat-simple)       start-nat-simple     ;;
       -n|--start-noupstream)       start-noupstream     ;;
       -e|--start-noupstream-eap)   start-noupstream-eap ;;
-#      -d|--start_nodogsplash)      start_nodogsplash    ;; #TODO: REMOVED
       -c|--start-coinhive)         start-coinhive       ;;
       -r|--start-redirector)       start-redirector     ;;
    #Other
